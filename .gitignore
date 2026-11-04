@@ -34,4 +34,8 @@ prisma/dev.db-journal
 
 # Media / Audio raw
 *.wav
+*.mp3
+*.webm
 scripts/concat.txt
+scripts/audio_list.txt
+scripts/record_temp/
