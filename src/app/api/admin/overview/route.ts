@@ -40,6 +40,30 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    let tournamentWithRank = activeTournament;
+    if (activeTournament) {
+      // Ordena por pontuação oficial para determinar a colocação real de cada participante
+      const sortedByRank = [...activeTournament.participants].sort((a, b) => {
+        if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+        if (b.exactScoresCount !== a.exactScoresCount) return b.exactScoresCount - a.exactScoresCount;
+        if (b.winnerPicksCount !== a.winnerPicksCount) return b.winnerPicksCount - a.winnerPicksCount;
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      });
+
+      const rankMap = new Map<string, number>();
+      sortedByRank.forEach((p, idx) => rankMap.set(p.id, idx + 1));
+
+      const participantsWithRank = activeTournament.participants.map((p) => ({
+        ...p,
+        rankPosition: rankMap.get(p.id) || p.rankPosition || 1,
+      }));
+
+      tournamentWithRank = {
+        ...activeTournament,
+        participants: participantsWithRank,
+      };
+    }
+
     const totalUsers = await prisma.user.count();
     const paidParticipantsCount = activeTournament
       ? activeTournament.participants.filter((p) => p.paymentStatus === "PAID").length
@@ -56,7 +80,7 @@ export async function GET(req: NextRequest) {
       : 0;
 
     return NextResponse.json({
-      tournament: activeTournament,
+      tournament: tournamentWithRank,
       metrics: {
         totalUsers,
         paidParticipantsCount,

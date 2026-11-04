@@ -192,6 +192,30 @@ async function main() {
   if (existingActiveTournament) {
     console.log(`🔒 [Seed Seguro] Bolão ativo já existente encontrado: "${existingActiveTournament.title}" (ID: ${existingActiveTournament.id}).`);
     console.log(`🔒 [Seed Seguro] Preservando clientes reais, palpites, pontuações e premiação customizada (R$ ${existingActiveTournament.prizePool}). Nenhuma alteração destrutiva realizada.`);
+
+    // Recalcula posições consecutivas no ranking (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, ...)
+    try {
+      const ranked = await prisma.participant.findMany({
+        where: { tournamentId: existingActiveTournament.id },
+        orderBy: [
+          { totalPoints: "desc" },
+          { exactScoresCount: "desc" },
+          { winnerPicksCount: "desc" },
+          { createdAt: "asc" },
+        ],
+      });
+
+      for (let index = 0; index < ranked.length; index++) {
+        await prisma.participant.update({
+          where: { id: ranked[index].id },
+          data: { rankPosition: index + 1 },
+        });
+      }
+      console.log(`✅ [Seed Seguro] ${ranked.length} participantes reordenados com posições consecutivas (1º ao ${ranked.length}º)!`);
+    } catch (e) {
+      console.error("Erro ao reordenar participantes no seed:", e);
+    }
+
     return;
   }
 

@@ -43,6 +43,7 @@ export default function PalpitesPage() {
   const [saving, setSaving] = useState(false);
   const [matches, setMatches] = useState<MatchItem[]>([]);
   const [tournament, setTournament] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [predictions, setPredictions] = useState<Record<string, { home: number; away: number }>>({});
   const [existingPredictions, setExistingPredictions] = useState<Record<string, any>>({});
   const [isPaid, setIsPaid] = useState(false);
@@ -51,67 +52,83 @@ export default function PalpitesPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  async function loadData() {
-    setLoading(true);
+  async function loadData(isInitial = false) {
+    if (isInitial && matches.length === 0) setLoading(true);
     setErrorMessage(null);
 
     try {
       const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
       const authHeaders: Record<string, string> = localToken ? { Authorization: `Bearer ${localToken}` } : {};
 
-      // 1. Verifica autenticação e status Pix
-      const meRes = await fetch(`/api/auth/me?_t=${Date.now()}`, {
-        headers: authHeaders,
-        cache: "no-store",
-      });
+      // 1. Busca dados da sessão e do bolão em paralelo
+      const [meRes, bolaoRes] = await Promise.all([
+        fetch(`/api/auth/me?_t=${Date.now()}`, { headers: authHeaders, cache: "no-store" }),
+        fetch(`/api/bolao/active?_t=${Date.now()}`, { cache: "no-store" }),
+      ]);
+
       const meData = await meRes.json();
+      const bData = await bolaoRes.json();
 
-      if (!meData.authenticated) {
-        setAuthOpen(true);
-        setLoading(false);
-        return;
+      let activeTourn = bData.tournament;
+      if (activeTourn) {
+        setTournament(activeTourn);
+        setMatches(activeTourn.matches || []);
       }
 
-      setIsPaid(meData.participantStatus === "PAID" || tournament?.entryFee === 0);
+      const isFreeTourn = activeTourn?.entryFee === 0;
 
-      // 2. Busca palpites já existentes
-      const predRes = await fetch(`/api/predictions?tournamentId=${tournamentId}&_t=${Date.now()}`, {
-        headers: authHeaders,
-        cache: "no-store",
-      });
-      if (predRes.ok) {
-        const predData = await predRes.json();
-        const predMap: Record<string, { home: number; away: number }> = {};
-        const detailMap: Record<string, any> = {};
+      if (meData?.authenticated && meData.user) {
+        setCurrentUser(meData.user);
+        setIsPaid(isFreeTourn || meData.participantStatus === "PAID");
 
-        if (Array.isArray(predData.predictions)) {
-          predData.predictions.forEach((p: any) => {
-            predMap[p.matchId] = { home: p.homeScore, away: p.awayScore };
-            detailMap[p.matchId] = p;
-          });
-          setPredictions(predMap);
-          setExistingPredictions(detailMap);
+        // 2. Busca palpites já salvos no banco
+        const predRes = await fetch(`/api/predictions?tournamentId=${tournamentId}&_t=${Date.now()}`, {
+          headers: authHeaders,
+          cache: "no-store",
+        });
 
-          // Se já tiver palpites travados
-          if (predData.isLocked || (predData.predictions.length > 0 && predData.predictions.some((p: any) => p.isLocked))) {
-            setIsLocked(true);
+        if (predRes.ok) {
+          const predData = await predRes.json();
+          const predMap: Record<string, { home: number; away: number }> = {};
+          const detailMap: Record<string, any> = {};
+
+          if (Array.isArray(predData.predictions) && predData.predictions.length > 0) {
+            predData.predictions.forEach((p: any) => {
+              predMap[p.matchId] = { home: p.homeScore, away: p.awayScore };
+              detailMap[p.matchId] = p;
+            });
+            setPredictions(predMap);
+            setExistingPredictions(detailMap);
+
+            if (predData.isLocked || predData.predictions.some((p: any) => p.isLocked)) {
+              setIsLocked(true);
+            }
+          } else {
+            // Se ainda não salvou no banco, restaura rascunho salvo se existir
+            try {
+              const draft = localStorage.getItem(`bolao_draft_${tournamentId}`);
+              if (draft) {
+                const parsed = JSON.parse(draft);
+                if (parsed && typeof parsed === "object") {
+                  setPredictions(parsed);
+                }
+              }
+            } catch (e) {}
           }
         }
-      }
-
-      // 3. Busca partidas da rodada
-      const bolaoRes = await fetch(`/api/bolao/active?_t=${Date.now()}`, {
-        cache: "no-store",
-      });
-      if (bolaoRes.ok) {
-        const bData = await bolaoRes.json();
-        if (bData.tournament) {
-          setTournament(bData.tournament);
-          setMatches(bData.tournament.matches || []);
-          if (bData.tournament.entryFee === 0) {
-            setIsPaid(true);
+      } else {
+        // Usuário não autenticado
+        setCurrentUser(null);
+        setIsPaid(isFreeTourn);
+        try {
+          const draft = localStorage.getItem(`bolao_draft_${tournamentId}`);
+          if (draft) {
+            const parsed = JSON.parse(draft);
+            if (parsed && typeof parsed === "object") {
+              setPredictions(parsed);
+            }
           }
-        }
+        } catch (e) {}
       }
     } catch (err: any) {
       setErrorMessage(err.message || "Erro ao carregar os dados.");
@@ -121,43 +138,57 @@ export default function PalpitesPage() {
   }
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(() => {
-      loadData();
-    }, 25000);
-    return () => clearInterval(interval);
+    loadData(true);
   }, [tournamentId]);
 
-  // Atualiza placar de um jogo no formulário local
+  // Atualiza placar de um jogo no formulário local e salva no rascunho
   function updateScore(matchId: string, side: "home" | "away", delta: number) {
     if (isLocked) return;
-    const current = predictions[matchId] || { home: 0, away: 0 };
-    const nextVal = Math.max(0, current[side] + delta);
-    setPredictions((prev) => ({
-      ...prev,
-      [matchId]: {
-        ...current,
-        [side]: nextVal,
-      },
-    }));
+    setPredictions((prev) => {
+      const current = prev[matchId] || { home: 0, away: 0 };
+      const nextVal = Math.max(0, current[side] + delta);
+      const updated = {
+        ...prev,
+        [matchId]: {
+          ...current,
+          [side]: nextVal,
+        },
+      };
+      try {
+        localStorage.setItem(`bolao_draft_${tournamentId}`, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
   }
 
   function setDirectScore(matchId: string, side: "home" | "away", value: string) {
     if (isLocked) return;
     const parsed = Math.max(0, parseInt(value || "0", 10));
-    const current = predictions[matchId] || { home: 0, away: 0 };
-    setPredictions((prev) => ({
-      ...prev,
-      [matchId]: {
-        ...current,
-        [side]: isNaN(parsed) ? 0 : parsed,
-      },
-    }));
+    setPredictions((prev) => {
+      const current = prev[matchId] || { home: 0, away: 0 };
+      const updated = {
+        ...prev,
+        [matchId]: {
+          ...current,
+          [side]: isNaN(parsed) ? 0 : parsed,
+        },
+      };
+      try {
+        localStorage.setItem(`bolao_draft_${tournamentId}`, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
   }
 
   // Enviar palpites para o backend com travamento definitivo
   async function handleSave() {
     if (isLocked) return;
+
+    const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
+    if (!localToken || !currentUser) {
+      setAuthOpen(true);
+      return;
+    }
 
     const confirmSave = confirm(
       "Atenção: Ao confirmar seus palpites, eles serão TRAVADOS definitivamente para esta rodada e não poderão ser alterados. Deseja confirmar agora?"
@@ -176,13 +207,11 @@ export default function PalpitesPage() {
         awayScore: scores.away,
       }));
 
-      const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
-
       const res = await fetch("/api/predictions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(localToken ? { Authorization: `Bearer ${localToken}` } : {}),
+          Authorization: `Bearer ${localToken}`,
         },
         body: JSON.stringify({
           tournamentId,
@@ -196,6 +225,10 @@ export default function PalpitesPage() {
         throw new Error(data.error || "Erro ao salvar palpites.");
       }
 
+      try {
+        localStorage.removeItem(`bolao_draft_${tournamentId}`);
+      } catch (e) {}
+
       setIsLocked(true);
       setSuccessMessage("✅ Palpites gravados com sucesso! Seus palpites estão travados para a apuração oficial.");
 
@@ -205,8 +238,8 @@ export default function PalpitesPage() {
         origin: { y: 0.6 },
       });
 
-      // Recarrega dados para obter os detalhes atualizados
-      loadData();
+      // Recarrega dados silenciosamente
+      loadData(false);
     } catch (err: any) {
       setErrorMessage(err.message);
     } finally {
@@ -234,10 +267,8 @@ export default function PalpitesPage() {
     );
   }
 
-  // 1. BLOQUEIO SE O USUÁRIO NÃO ESTÁ COM INSCRIÇÃO APROVADA
-  if (!isPaid) {
-    const isFree = tournament?.entryFee === 0;
-
+  // 1. BLOQUEIO SE O USUÁRIO LOGADO NÃO ESTÁ COM INSCRIÇÃO APROVADA EM BOLÃO PAGO
+  if (tournament && tournament.entryFee > 0 && currentUser && !isPaid) {
     return (
       <div className="max-w-md mx-auto px-4 py-12 text-center">
         <div className="bg-arena-900 border border-arena-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
@@ -247,43 +278,26 @@ export default function PalpitesPage() {
 
           <h1 className="text-2xl font-bold text-white mb-2">Acesso aos Palpites Bloqueado</h1>
           <p className="text-xs sm:text-sm text-gray-400 mb-6 leading-relaxed">
-            {isFree
-              ? "Esta rodada é 100% gratuita! Confirme sua vaga para liberar o envio de palpites."
-              : "Para garantir a integridade do bolão e liberar a premiação, é necessário confirmar o pagamento da taxa de inscrição no Pix."}
+            Para garantir a integridade do bolão e liberar a premiação, é necessário confirmar o pagamento da taxa de inscrição no Pix.
           </p>
 
           <Link
             href={`/bolao/${tournamentId}/pagamento`}
             className="w-full py-4 px-6 bg-pitch-green hover:bg-pitch-light text-arena-950 font-extrabold text-sm rounded-xl transition shadow-glow flex items-center justify-center gap-2"
           >
-            {isFree ? (
-              <>
-                <Sparkles className="w-4 h-4 text-arena-950" />
-                <span>Confirmar Minha Vaga Grátis Agora</span>
-              </>
-            ) : (
-              <>
-                <Zap className="w-4 h-4 text-arena-950" />
-                <span>Pagar Inscrição no Pix Agora</span>
-              </>
-            )}
+            <Zap className="w-4 h-4 text-arena-950" />
+            <span>Pagar Inscrição no Pix Agora</span>
           </Link>
 
           <div className="mt-4">
             <button
-              onClick={() => loadData()}
+              onClick={() => loadData(false)}
               className="text-xs text-gray-400 hover:text-white underline"
             >
               Já paguei? Atualizar status
             </button>
           </div>
         </div>
-
-        <AuthModal
-          isOpen={authOpen}
-          onClose={() => setAuthOpen(false)}
-          onSuccess={() => loadData()}
-        />
       </div>
     );
   }
@@ -306,12 +320,31 @@ export default function PalpitesPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
+      {/* BANNER PARA JOGADORES AINDA NÃO CONECTADOS */}
+      {!currentUser && (
+        <div className="mb-6 p-4 rounded-2xl bg-gold-500/10 border border-gold-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-goldglow">
+          <div className="flex items-center gap-2.5">
+            <Sparkles className="w-5 h-5 text-gold-400 shrink-0" />
+            <div>
+              <span className="text-xs font-bold text-white block">Preencha seus palpites com tranquilidade!</span>
+              <span className="text-[11px] text-gray-300">Entre na sua conta ou cadastre-se grátis para salvar e disputar a premiação no Pix.</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setAuthOpen(true)}
+            className="px-4 py-2 bg-gold-500 hover:bg-gold-400 text-arena-950 font-bold text-xs rounded-xl transition shadow-sm shrink-0"
+          >
+            Entrar / Cadastrar Grátis
+          </button>
+        </div>
+      )}
+
       {/* CABEÇALHO */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 text-pitch-green text-xs font-bold uppercase tracking-wider mb-1">
             <CheckCircle2 className="w-4 h-4" />
-            <span>Inscrição Confirmada</span>
+            <span>{currentUser ? "Inscrição Confirmada" : "Rodada 100% Gratuita"}</span>
           </div>
           <h1 className="text-2xl font-black text-white tracking-tight">Meus Palpites</h1>
           <p className="text-xs text-gray-400">
@@ -596,6 +629,15 @@ export default function PalpitesPage() {
           </button>
         )}
       </div>
+
+      <AuthModal
+        isOpen={authOpen}
+        onClose={() => setAuthOpen(false)}
+        onSuccess={() => {
+          setAuthOpen(false);
+          loadData(false);
+        }}
+      />
     </div>
   );
 }

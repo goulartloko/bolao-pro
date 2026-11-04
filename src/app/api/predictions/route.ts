@@ -105,6 +105,10 @@ export async function POST(req: NextRequest) {
     });
 
     if (!participant && tournament.entryFee === 0) {
+      const totalExistingParts = await prisma.participant.count({
+        where: { tournamentId },
+      });
+
       participant = await prisma.participant.create({
         data: {
           userId: user.id,
@@ -114,7 +118,7 @@ export async function POST(req: NextRequest) {
           totalPoints: 0,
           exactScoresCount: 0,
           winnerPicksCount: 0,
-          rankPosition: 1,
+          rankPosition: totalExistingParts + 1,
         },
       });
     }

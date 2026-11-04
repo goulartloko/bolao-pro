@@ -78,6 +78,10 @@ export async function POST(req: NextRequest) {
 
       if (activeTournament) {
         const isFree = activeTournament.entryFee === 0;
+        const totalExistingParts = await prisma.participant.count({
+          where: { tournamentId: activeTournament.id },
+        });
+
         const participant = await prisma.participant.upsert({
           where: {
             userId_tournamentId: {
@@ -96,7 +100,7 @@ export async function POST(req: NextRequest) {
             totalPoints: 0,
             exactScoresCount: 0,
             winnerPicksCount: 0,
-            rankPosition: 1,
+            rankPosition: totalExistingParts + 1,
           },
         });
 

@@ -104,12 +104,14 @@ export default function RankingPage() {
     return () => clearInterval(interval);
   }, [tournamentId]);
 
-  // Encontra a posição do usuário logado
-  const myParticipant = participants.find((p) => p.user.id === currentUser?.id);
+  // Encontra a posição oficial do usuário logado na ordem da classificação
+  const myParticipantIndex = participants.findIndex((p) => p.user.id === currentUser?.id);
+  const myParticipant = myParticipantIndex !== -1 ? participants[myParticipantIndex] : null;
+  const myRankPosition = myParticipantIndex !== -1 ? myParticipantIndex + 1 : null;
 
   // Compartilhar no WhatsApp (Texto Rápido)
   function shareOnWhatsApp() {
-    const position = myParticipant?.rankPosition || "participando";
+    const position = myRankPosition || "participando";
     const points = myParticipant?.totalPoints || 0;
     const exacts = myParticipant?.exactScoresCount || 0;
     const bolaoTitle = tournament?.title || "Bolão dos Cria";
@@ -126,7 +128,7 @@ export default function RankingPage() {
 
   // Copiar para Instagram Stories
   async function copyForInstagram() {
-    const position = myParticipant?.rankPosition || "1";
+    const position = myRankPosition || "1";
     const points = myParticipant?.totalPoints || 0;
     const text = `⚽ ${tournament?.title || "Bolão dos Cria"}\n🏆 Estou em ${position}º Lugar com ${points} pts!\n👉 Faça seu palpite no link da bio!`;
 
@@ -265,7 +267,7 @@ export default function RankingPage() {
         <div className="bg-pitch-green/10 border border-pitch-green/40 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-glow">
           <div className="flex items-center gap-3.5 w-full sm:w-auto">
             <div className="w-12 h-12 rounded-2xl bg-pitch-green text-arena-950 font-black text-xl flex items-center justify-center shadow-md">
-              {myParticipant.rankPosition}º
+              {myRankPosition}º
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -342,9 +344,10 @@ export default function RankingPage() {
               Nenhum participante com pagamento confirmado ainda. Seja o primeiro a se inscrever!
             </div>
           ) : (
-            participants.map((part) => {
+            participants.map((part, index) => {
               const isMe = part.user.id === currentUser?.id;
               const team = getTeamByName(part.user.favoriteTeam);
+              const position = index + 1;
 
               return (
                 <div
@@ -357,16 +360,16 @@ export default function RankingPage() {
                   <div className="col-span-2 flex items-center gap-1.5">
                     <span
                       className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        part.rankPosition === 1
-                          ? "bg-gold-500 text-arena-950 font-black"
-                          : part.rankPosition === 2
+                        position === 1
+                          ? "bg-gold-500 text-arena-950 font-black shadow-goldglow"
+                          : position === 2
                           ? "bg-gray-300 text-arena-950 font-bold"
-                          : part.rankPosition === 3
+                          : position === 3
                           ? "bg-amber-700 text-white font-bold"
-                          : "text-gray-400"
+                          : "text-gray-400 font-mono font-bold"
                       }`}
                     >
-                      {part.rankPosition}º
+                      {position}º
                     </span>
                   </div>
 

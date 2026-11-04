@@ -44,8 +44,10 @@ export async function GET(req: NextRequest) {
       });
 
       if (participant) {
-        participantStatus = participant.paymentStatus;
+        participantStatus = activeTournament.entryFee === 0 ? "PAID" : participant.paymentStatus;
         participantId = participant.id;
+      } else if (activeTournament.entryFee === 0) {
+        participantStatus = "PAID";
       }
     }
 

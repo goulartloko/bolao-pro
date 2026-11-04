@@ -36,8 +36,19 @@ export async function GET() {
       },
     });
 
+    const participantsWithRank = tournament
+      ? tournament.participants.map((p, idx) => ({
+          ...p,
+          rankPosition: idx + 1,
+        }))
+      : [];
+
+    const tournamentWithRank = tournament
+      ? { ...tournament, participants: participantsWithRank }
+      : null;
+
     return NextResponse.json(
-      { tournament },
+      { tournament: tournamentWithRank },
       {
         headers: {
           "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
