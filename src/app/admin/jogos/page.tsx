@@ -12,6 +12,7 @@ import {
   Zap,
 } from "lucide-react";
 import { formatMatchDate } from "@/lib/dateUtils";
+import { TeamBadge } from "@/components/TeamBadge";
 
 interface MatchItem {
   id: string;
@@ -339,10 +340,12 @@ export default function AdminJogosPage() {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-3 text-sm font-bold text-white">
-                        <span className="text-right min-w-[100px]">{match.homeTeam}</span>
-                        <span className="text-gray-500 font-mono text-xs">x</span>
-                        <span className="text-left min-w-[100px]">{match.awayTeam}</span>
+                      <div className="flex items-center gap-2 text-sm font-bold text-white">
+                        <span className="text-right min-w-[90px]">{match.homeTeam}</span>
+                        <TeamBadge teamNameOrId={match.homeTeam} size="sm" />
+                        <span className="text-gray-500 font-mono text-xs px-1">x</span>
+                        <TeamBadge teamNameOrId={match.awayTeam} size="sm" />
+                        <span className="text-left min-w-[90px]">{match.awayTeam}</span>
                       </div>
                     </div>
 

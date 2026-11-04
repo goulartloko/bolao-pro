@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import AuthModal from "@/components/AuthModal";
+import TeamBadge from "@/components/TeamBadge";
 import { formatMatchDate } from "@/lib/dateUtils";
 
 interface MatchItem {
@@ -448,9 +449,7 @@ export default function PalpitesPage() {
                     <span className="text-xs sm:text-sm font-bold text-white truncate max-w-[110px] sm:max-w-[150px]">
                       {match.homeTeam}
                     </span>
-                    <div className="w-7 h-7 rounded-full bg-arena-800 border border-arena-700 flex items-center justify-center font-bold text-xs text-gray-300 shrink-0">
-                      {match.homeTeam.charAt(0)}
-                    </div>
+                    <TeamBadge teamNameOrId={match.homeTeam} size="md" />
                   </div>
 
                   {/* Controles de Placar Casa */}
@@ -501,9 +500,7 @@ export default function PalpitesPage() {
                 {/* Visitante */}
                 <div className="col-span-3 flex flex-col items-center sm:items-start text-center sm:text-left">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-7 h-7 rounded-full bg-arena-800 border border-arena-700 flex items-center justify-center font-bold text-xs text-gray-300 shrink-0">
-                      {match.awayTeam.charAt(0)}
-                    </div>
+                    <TeamBadge teamNameOrId={match.awayTeam} size="md" />
                     <span className="text-xs sm:text-sm font-bold text-white truncate max-w-[110px] sm:max-w-[150px]">
                       {match.awayTeam}
                     </span>

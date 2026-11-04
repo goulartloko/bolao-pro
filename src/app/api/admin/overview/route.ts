@@ -19,6 +19,21 @@ export async function GET(req: NextRequest) {
           include: {
             user: { select: { id: true, name: true, email: true, phone: true, avatar: true, favoriteTeam: true } },
             payments: { take: 1, orderBy: { createdAt: "desc" } },
+            predictions: {
+              include: {
+                match: {
+                  select: {
+                    id: true,
+                    homeTeam: true,
+                    awayTeam: true,
+                    homeScore: true,
+                    awayScore: true,
+                    matchDate: true,
+                    status: true,
+                  },
+                },
+              },
+            },
           },
           orderBy: { createdAt: "desc" },
         },

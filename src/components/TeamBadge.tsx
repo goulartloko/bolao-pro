@@ -238,6 +238,92 @@ export default function TeamBadge({
           </svg>
         );
 
+      case "remo":
+        return (
+          <svg viewBox="0 0 40 40" className="w-full h-full">
+            <circle cx="20" cy="20" r="19" fill="#002040" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="20" cy="20" r="15" fill="none" stroke="#ffffff" strokeWidth="1" />
+            <text x="20" y="24" fill="#ffffff" fontWeight="900" fontSize="10" textAnchor="middle" fontFamily="sans-serif">
+              CR
+            </text>
+          </svg>
+        );
+
+      case "chapecoense":
+        return (
+          <svg viewBox="0 0 40 40" className="w-full h-full">
+            <circle cx="20" cy="20" r="19" fill="#007a3d" stroke="#ffffff" strokeWidth="2" />
+            <circle cx="20" cy="20" r="15" fill="none" stroke="#ffffff" strokeWidth="1" strokeDasharray="3 2" />
+            <text x="20" y="24" fill="#ffffff" fontWeight="900" fontSize="9" textAnchor="middle" fontFamily="sans-serif">
+              ACF
+            </text>
+          </svg>
+        );
+
+      case "mirassol":
+        return (
+          <svg viewBox="0 0 40 40" className="w-full h-full">
+            <polygon points="20,2 38,10 32,32 20,38 8,32 2,10" fill="#ffd700" stroke="#006437" strokeWidth="2" />
+            <text x="20" y="24" fill="#006437" fontWeight="900" fontSize="9" textAnchor="middle" fontFamily="sans-serif">
+              MFC
+            </text>
+          </svg>
+        );
+
+      case "bragantino":
+        return (
+          <svg viewBox="0 0 40 40" className="w-full h-full">
+            <polygon points="20,2 38,10 32,32 20,38 8,32 2,10" fill="#ffffff" stroke="#d50000" strokeWidth="2" />
+            <circle cx="20" cy="20" r="11" fill="#d50000" />
+            <text x="20" y="24" fill="#ffffff" fontWeight="900" fontSize="8" textAnchor="middle" fontFamily="sans-serif">
+              RBB
+            </text>
+          </svg>
+        );
+
+      case "juventude":
+        return (
+          <svg viewBox="0 0 40 40" className="w-full h-full">
+            <circle cx="20" cy="20" r="19" fill="#006437" stroke="#ffffff" strokeWidth="2" />
+            <line x1="4" y1="20" x2="36" y2="20" stroke="#ffffff" strokeWidth="2" />
+            <text x="20" y="16" fill="#ffffff" fontWeight="900" fontSize="8" textAnchor="middle" fontFamily="sans-serif">
+              ECJ
+            </text>
+          </svg>
+        );
+
+      case "cuiaba":
+        return (
+          <svg viewBox="0 0 40 40" className="w-full h-full">
+            <polygon points="20,2 38,10 32,32 20,38 8,32 2,10" fill="#005537" stroke="#ffd700" strokeWidth="2" />
+            <text x="20" y="24" fill="#ffd700" fontWeight="900" fontSize="9" textAnchor="middle" fontFamily="sans-serif">
+              CUI
+            </text>
+          </svg>
+        );
+
+      case "criciuma":
+        return (
+          <svg viewBox="0 0 40 40" className="w-full h-full">
+            <polygon points="20,2 38,10 32,32 20,38 8,32 2,10" fill="#ffd700" stroke="#111111" strokeWidth="2" />
+            <rect x="8" y="18" width="24" height="6" fill="#111111" />
+            <text x="20" y="15" fill="#111111" fontWeight="900" fontSize="8" textAnchor="middle" fontFamily="sans-serif">
+              CRI
+            </text>
+          </svg>
+        );
+
+      case "atletico-go":
+        return (
+          <svg viewBox="0 0 40 40" className="w-full h-full">
+            <polygon points="20,2 38,10 32,32 20,38 8,32 2,10" fill="#d50000" stroke="#111111" strokeWidth="2" />
+            <polygon points="20,8 34,14 20,24 6,14" fill="#111111" />
+            <text x="20" y="20" fill="#ffffff" fontWeight="900" fontSize="7" textAnchor="middle" fontFamily="sans-serif">
+              ACG
+            </text>
+          </svg>
+        );
+
       default:
         return (
           <svg viewBox="0 0 40 40" className="w-full h-full">
@@ -257,10 +343,24 @@ export default function TeamBadge({
     }
   };
 
+  const [imgError, setImgError] = React.useState(false);
+
   return (
     <div className={`inline-flex items-center gap-1.5 ${className}`}>
-      <div className={`shrink-0 rounded-xl overflow-hidden shadow-sm flex items-center justify-center p-0.5 bg-arena-900 border border-arena-750 ${sizeClasses[size]}`}>
-        {renderShieldSvg()}
+      <div
+        className={`shrink-0 rounded-xl overflow-hidden shadow-sm flex items-center justify-center p-0.5 bg-arena-900 border border-arena-750 ${sizeClasses[size]}`}
+      >
+        {team.badge && !imgError ? (
+          <img
+            src={team.badge}
+            alt={team.name}
+            loading="lazy"
+            onError={() => setImgError(true)}
+            className="w-full h-full object-contain filter drop-shadow"
+          />
+        ) : (
+          renderShieldSvg()
+        )}
       </div>
       {showName && (
         <span className="font-bold text-gray-200 truncate">{team.name}</span>
@@ -268,3 +368,5 @@ export default function TeamBadge({
     </div>
   );
 }
+
+export { TeamBadge };

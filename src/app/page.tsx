@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import CountdownTimer from "@/components/CountdownTimer";
 import { formatMatchDate } from "@/lib/dateUtils";
 import { parsePrizes } from "@/lib/prizes";
+import TeamBadge from "@/components/TeamBadge";
 import {
   Trophy,
   Zap,
@@ -389,28 +390,24 @@ export default async function HomePage() {
                   </span>
                 </div>
 
-                {/* Confronto */}
-                <div className="grid grid-cols-7 items-center text-center py-1">
+                {/* Confronto com Escudos Oficiais */}
+                <div className="grid grid-cols-7 items-center text-center py-2">
                   {/* Mandante */}
-                  <div className="col-span-3 flex items-center justify-end gap-2">
+                  <div className="col-span-3 flex items-center justify-end gap-2.5">
                     <span className="text-xs sm:text-sm font-bold text-white text-right truncate">
                       {match.homeTeam}
                     </span>
-                    <div className="w-8 h-8 rounded-full bg-arena-800 border border-arena-700 flex items-center justify-center font-black text-xs text-white shrink-0">
-                      {match.homeTeam.charAt(0)}
-                    </div>
+                    <TeamBadge teamNameOrId={match.homeTeam} size="lg" />
                   </div>
 
                   {/* VS */}
                   <div className="col-span-1 flex justify-center">
-                    <span className="text-xs font-black text-gray-500">VS</span>
+                    <span className="text-[11px] font-black text-pitch-green bg-pitch-green/10 border border-pitch-green/20 px-2 py-0.5 rounded-md font-mono">VS</span>
                   </div>
 
                   {/* Visitante */}
-                  <div className="col-span-3 flex items-center justify-start gap-2">
-                    <div className="w-8 h-8 rounded-full bg-arena-800 border border-arena-700 flex items-center justify-center font-black text-xs text-white shrink-0">
-                      {match.awayTeam.charAt(0)}
-                    </div>
+                  <div className="col-span-3 flex items-center justify-start gap-2.5">
+                    <TeamBadge teamNameOrId={match.awayTeam} size="lg" />
                     <span className="text-xs sm:text-sm font-bold text-white text-left truncate">
                       {match.awayTeam}
                     </span>
@@ -424,6 +421,86 @@ export default async function HomePage() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* REGRAS E FORMAS DE PONTUAÇÃO DO BOLÃO */}
+      <section className="py-10 px-4 max-w-4xl mx-auto">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pitch-green/10 text-pitch-green text-xs font-black uppercase tracking-wider mb-2 border border-pitch-green/20">
+            <Target className="w-4 h-4 text-pitch-green" />
+            <span>Formas de Pontuação</span>
+          </div>
+          <h2 className="text-xl sm:text-3xl font-black text-white tracking-tight">
+            Como Você Pontua no Bolão
+          </h2>
+          <p className="text-xs sm:text-sm text-gray-400 mt-1">
+            Cada palpite cravado ou acertado soma pontos automáticos para o ranking da rodada
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Placar Exato */}
+          <div className="glass-card rounded-3xl p-6 relative overflow-hidden border-pitch-green/40 shadow-glow">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-2xl font-black font-mono text-pitch-green bg-pitch-green/10 border border-pitch-green/30 px-3 py-1 rounded-xl">
+                +{activeTournament.exactScorePoints || 10} pts
+              </span>
+              <span className="text-3xl">🎯</span>
+            </div>
+            <h3 className="text-base font-extrabold text-white mb-1.5">Placar Exato (Cravada)</h3>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              Você cravou exatamente o placar final do confronto.
+            </p>
+            <div className="mt-3.5 p-3 rounded-xl bg-arena-850 border border-arena-750 text-[11px] text-gray-400">
+              <span className="text-pitch-green font-bold">Exemplo:</span> Palpitou <strong>2 x 1</strong> e o jogo terminou exatamente <strong>2 x 1</strong>.
+            </div>
+          </div>
+
+          {/* Vencedor */}
+          <div className="glass-card rounded-3xl p-6 relative overflow-hidden border-gold-500/30 shadow-goldglow">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-2xl font-black font-mono text-gold-400 bg-gold-500/10 border border-gold-500/30 px-3 py-1 rounded-xl">
+                +{activeTournament.winnerPoints || 5} pts
+              </span>
+              <span className="text-3xl">🏆</span>
+            </div>
+            <h3 className="text-base font-extrabold text-white mb-1.5">Acerto do Vencedor</h3>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              Você acertou quem venceu a partida (ou empate), errando apenas o placar exato.
+            </p>
+            <div className="mt-3.5 p-3 rounded-xl bg-arena-850 border border-arena-750 text-[11px] text-gray-400">
+              <span className="text-gold-400 font-bold">Exemplo:</span> Palpitou <strong>2 x 0</strong> e o clube venceu por <strong>3 x 1</strong>.
+            </div>
+          </div>
+
+          {/* Gols / Saldo */}
+          <div className="glass-card rounded-3xl p-6 relative overflow-hidden border-arena-700">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-2xl font-black font-mono text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-3 py-1 rounded-xl">
+                +{activeTournament.goalDiffPoints || 2} pts
+              </span>
+              <span className="text-3xl">⚽</span>
+            </div>
+            <h3 className="text-base font-extrabold text-white mb-1.5">Gols / Diferença</h3>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              Você acertou a quantidade de gols marcados por uma das equipes no confronto.
+            </p>
+            <div className="mt-3.5 p-3 rounded-xl bg-arena-850 border border-arena-750 text-[11px] text-gray-400">
+              <span className="text-cyan-400 font-bold">Exemplo:</span> Palpitou <strong>2 x 2</strong> e o jogo terminou <strong>2 x 0</strong>.
+            </div>
+          </div>
+        </div>
+
+        {/* Critérios de Desempate */}
+        <div className="mt-4 p-4 rounded-2xl bg-arena-900 border border-arena-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-400">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-pitch-green shrink-0" />
+            <span><strong>Critérios de Desempate:</strong> 1º Mais cravadas exatas • 2º Mais acertos de vencedor • 3º Horário de confirmação do palpite.</span>
+          </div>
+          <span className="text-gold-400 font-bold shrink-0">
+            ✓ Apuração 100% Automática
+          </span>
         </div>
       </section>
 

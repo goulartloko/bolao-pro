@@ -21,8 +21,31 @@ import {
   Save,
   Shield,
   RotateCcw,
+  Eye,
+  Trophy,
+  Target,
 } from "lucide-react";
 import { BRAZILIAN_TEAMS, getTeamByName } from "@/lib/teams";
+import { TeamBadge } from "@/components/TeamBadge";
+import { formatMatchDate } from "@/lib/dateUtils";
+
+interface PredictionItem {
+  id: string;
+  homeScore: number;
+  awayScore: number;
+  pointsEarned: number;
+  scoreType: string;
+  isLocked: boolean;
+  match: {
+    id: string;
+    homeTeam: string;
+    awayTeam: string;
+    homeScore?: number | null;
+    awayScore?: number | null;
+    matchDate: string;
+    status: string;
+  };
+}
 
 interface ParticipantItem {
   id: string;
@@ -40,6 +63,7 @@ interface ParticipantItem {
     avatar?: string | null;
     favoriteTeam?: string | null;
   };
+  predictions?: PredictionItem[];
 }
 
 export default function AdminParticipantesPage() {
@@ -59,6 +83,9 @@ export default function AdminParticipantesPage() {
   const [editPoints, setEditPoints] = useState(0);
   const [editExacts, setEditExacts] = useState(0);
   const [editSaving, setEditSaving] = useState(false);
+
+  // Modal de visualização de palpites do jogador
+  const [viewingPredictionsParticipant, setViewingPredictionsParticipant] = useState<ParticipantItem | null>(null);
 
   async function loadData() {
     try {
@@ -520,6 +547,21 @@ export default function AdminParticipantesPage() {
                       {/* Ações Avançadas */}
                       <td className="px-4 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* Visualizar Palpites */}
+                          <button
+                            onClick={() => setViewingPredictionsParticipant(part)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gold-500/10 hover:bg-gold-500/25 text-gold-400 border border-gold-500/30 text-xs font-bold transition shadow-sm"
+                            title="Visualizar Palpites deste Participante"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Palpites</span>
+                            {part.predictions && part.predictions.length > 0 && (
+                              <span className="px-1.5 py-0.2 rounded-full bg-gold-500 text-arena-950 text-[10px] font-black">
+                                {part.predictions.length}
+                              </span>
+                            )}
+                          </button>
+
                           {/* Editar no modal */}
                           <button
                             onClick={() => {
@@ -709,6 +751,209 @@ export default function AdminParticipantesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE VISUALIZAÇÃO DE PALPITES DO JOGADOR */}
+      {viewingPredictionsParticipant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in overflow-y-auto">
+          <div className="w-full max-w-2xl bg-arena-900 border border-arena-700 rounded-3xl p-6 shadow-2xl relative my-8 max-h-[90vh] flex flex-col">
+            {/* Botão Fechar Topo */}
+            <button
+              onClick={() => setViewingPredictionsParticipant(null)}
+              className="absolute top-5 right-5 p-2 text-gray-400 hover:text-white rounded-full bg-arena-800 transition"
+              title="Fechar"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            {/* Cabeçalho do Modal */}
+            <div className="mb-4 pr-10">
+              <div className="flex items-center gap-2 mb-1">
+                <Eye className="w-5 h-5 text-gold-500" />
+                <h3 className="text-lg font-bold text-white">
+                  Palpites de {viewingPredictionsParticipant.user.name}
+                </h3>
+              </div>
+              <p className="text-xs text-gray-400 flex flex-wrap items-center gap-3 mt-1">
+                <span className="flex items-center gap-1 text-gray-300">
+                  <Phone className="w-3 h-3 text-pitch-green" /> {viewingPredictionsParticipant.user.phone}
+                </span>
+                <span className="flex items-center gap-1 text-gray-400">
+                  <Mail className="w-3 h-3 text-gray-500" /> {viewingPredictionsParticipant.user.email}
+                </span>
+                {viewingPredictionsParticipant.user.favoriteTeam && (
+                  <span className="px-2 py-0.5 rounded bg-arena-800 border border-arena-700 text-gray-300 text-[11px] font-semibold">
+                    ⚽ {viewingPredictionsParticipant.user.favoriteTeam}
+                  </span>
+                )}
+              </p>
+            </div>
+
+            {/* Resumo de Desempenho */}
+            <div className="grid grid-cols-3 gap-2.5 p-3 rounded-2xl bg-arena-850 border border-arena-800 mb-4 shrink-0">
+              <div className="text-center">
+                <span className="block text-[10px] uppercase font-bold text-gray-400">Palpites Registrados</span>
+                <span className="text-lg font-black text-white font-mono">
+                  {viewingPredictionsParticipant.predictions?.length || 0}
+                </span>
+              </div>
+              <div className="text-center border-x border-arena-750">
+                <span className="block text-[10px] uppercase font-bold text-gold-400">Pontuação Total</span>
+                <span className="text-lg font-black text-pitch-green font-mono">
+                  {viewingPredictionsParticipant.totalPoints} pts
+                </span>
+              </div>
+              <div className="text-center">
+                <span className="block text-[10px] uppercase font-bold text-pitch-green">Placares Exatos</span>
+                <span className="text-lg font-black text-gold-400 font-mono">
+                  {viewingPredictionsParticipant.exactScoresCount} cravadas
+                </span>
+              </div>
+            </div>
+
+            {/* Lista com scroll dos palpites */}
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1.5 custom-scrollbar">
+              {!viewingPredictionsParticipant.predictions || viewingPredictionsParticipant.predictions.length === 0 ? (
+                <div className="p-8 rounded-2xl bg-arena-850/50 border border-arena-800 text-center text-gray-400 text-xs">
+                  <Clock className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+                  <p className="font-semibold text-gray-300">Nenhum palpite enviado ainda</p>
+                  <p className="mt-1 text-gray-500">Este participante ainda não enviou palpites para os jogos desta rodada.</p>
+                </div>
+              ) : (
+                viewingPredictionsParticipant.predictions.map((pred) => {
+                  const isFinished = pred.match.status === "FINISHED";
+                  const isExact = pred.pointsEarned === 10;
+                  const isWinner = pred.pointsEarned === 5;
+                  const isGoalDiff = pred.pointsEarned === 2;
+
+                  return (
+                    <div
+                      key={pred.id}
+                      className={`p-3.5 rounded-2xl border transition ${
+                        isExact
+                          ? "bg-pitch-green/5 border-pitch-green/40 shadow-sm"
+                          : isWinner || isGoalDiff
+                          ? "bg-gold-500/5 border-gold-500/30"
+                          : "bg-arena-850 border-arena-800"
+                      }`}
+                    >
+                      {/* Linha superior: Data do jogo e Status */}
+                      <div className="flex items-center justify-between text-[11px] text-gray-400 mb-2">
+                        <span className="font-medium text-gray-300">
+                          {formatMatchDate(pred.match.matchDate)}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {isFinished ? (
+                            <span className="px-2 py-0.5 rounded-full bg-pitch-green/10 text-pitch-green text-[10px] font-bold border border-pitch-green/30">
+                              Partida Encerrada
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full bg-arena-800 text-gray-400 text-[10px] font-medium">
+                              Agendado
+                            </span>
+                          )}
+                          {pred.isLocked ? (
+                            <span className="px-1.5 py-0.5 rounded bg-arena-800 text-gray-400 text-[10px]">
+                              🔒 Trancado
+                            </span>
+                          ) : (
+                            <span className="px-1.5 py-0.5 rounded bg-pitch-green/10 text-pitch-green text-[10px]">
+                              ⏳ Aberto
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Confronto dos Clubes com os Escudos e Palpite */}
+                      <div className="flex items-center justify-between gap-2 py-1">
+                        {/* Mandante */}
+                        <div className="flex items-center gap-2.5 flex-1 justify-end text-right">
+                          <span className="font-bold text-white text-xs sm:text-sm truncate">
+                            {pred.match.homeTeam}
+                          </span>
+                          <TeamBadge teamNameOrId={pred.match.homeTeam} size="md" />
+                        </div>
+
+                        {/* Palpite do Usuário */}
+                        <div className="flex flex-col items-center px-3 py-1.5 bg-arena-950/80 rounded-xl border border-gold-500/30 shrink-0">
+                          <span className="text-[9px] uppercase tracking-wider text-gold-400 font-bold">
+                            Palpite
+                          </span>
+                          <div className="font-mono font-extrabold text-white text-base flex items-center gap-1.5">
+                            <span className="text-gold-400">{pred.homeScore}</span>
+                            <span className="text-gray-500 text-xs">x</span>
+                            <span className="text-gold-400">{pred.awayScore}</span>
+                          </div>
+                        </div>
+
+                        {/* Visitante */}
+                        <div className="flex items-center gap-2.5 flex-1 justify-start text-left">
+                          <TeamBadge teamNameOrId={pred.match.awayTeam} size="md" />
+                          <span className="font-bold text-white text-xs sm:text-sm truncate">
+                            {pred.match.awayTeam}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Linha inferior: Placar Oficial e Pontos Obtidos */}
+                      <div className="mt-2.5 pt-2 border-t border-arena-800/80 flex items-center justify-between text-xs">
+                        <div className="text-gray-400">
+                          {isFinished ? (
+                            <span className="font-medium">
+                              Placar Oficial: <strong className="text-white font-mono">{pred.match.homeScore} x {pred.match.awayScore}</strong>
+                            </span>
+                          ) : (
+                            <span className="text-[11px] text-gray-500">Aguardando início do jogo</span>
+                          )}
+                        </div>
+
+                        <div>
+                          {isFinished ? (
+                            isExact ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-pitch-green/20 text-pitch-green font-black text-[11px] border border-pitch-green/40 shadow-glow">
+                                🎯 +10 PTS (Placar Exato)
+                              </span>
+                            ) : isWinner ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gold-500/20 text-gold-400 font-black text-[11px] border border-gold-500/40">
+                                ⚡ +5 PTS (Vencedor)
+                              </span>
+                            ) : isGoalDiff ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 font-black text-[11px] border border-blue-500/40">
+                                ⚽ +2 PTS (Saldo/Gols)
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-arena-800 text-gray-400 font-bold text-[11px]">
+                                0 pts
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-[10px] text-gray-500">
+                              Pontuação pendente
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Rodapé do Modal */}
+            <div className="pt-4 mt-3 border-t border-arena-800 flex items-center justify-between shrink-0">
+              <span className="text-[11px] text-gray-500">
+                Visualização oficial de conferência pelo administrador.
+              </span>
+              <button
+                type="button"
+                onClick={() => setViewingPredictionsParticipant(null)}
+                className="py-2 px-5 bg-arena-800 hover:bg-arena-750 text-white font-bold text-xs rounded-xl transition"
+              >
+                Fechar
+              </button>
+            </div>
           </div>
         </div>
       )}
