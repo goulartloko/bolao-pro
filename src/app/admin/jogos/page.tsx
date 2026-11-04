@@ -11,6 +11,7 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
+import { formatMatchDate } from "@/lib/dateUtils";
 
 interface MatchItem {
   id: string;
@@ -42,14 +43,22 @@ export default function AdminJogosPage() {
   const [addingMatch, setAddingMatch] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
+  function getAuthHeaders() {
+    const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
+    return {
+      "Content-Type": "application/json",
+      ...(localToken ? { Authorization: `Bearer ${localToken}` } : {}),
+    };
+  }
+
   async function handleAutoSync(feedKey: string) {
-    if (!confirm("Deseja sincronizar e substituir as partidas por este pacote oficial automaticamente?")) return;
+    if (!confirm("Deseja sincronizar e substituir as partidas por este pacote oficial de 10 jogos automaticamente?")) return;
     setSyncing(true);
     setStatusMessage(null);
     try {
       const res = await fetch("/api/admin/matches/sync", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ feedKey, replaceExisting: true }),
       });
       const data = await res.json();
@@ -65,7 +74,10 @@ export default function AdminJogosPage() {
 
   async function loadData() {
     try {
-      const res = await fetch("/api/admin/overview");
+      const res = await fetch(`/api/admin/overview?_t=${Date.now()}`, {
+        headers: getAuthHeaders(),
+        cache: "no-store",
+      });
       const data = await res.json();
       if (data.tournament) {
         setTournament(data.tournament);
@@ -105,7 +117,7 @@ export default function AdminJogosPage() {
     try {
       const res = await fetch("/api/admin/matches/score", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           matchId,
           homeScore: score.home,
@@ -120,7 +132,7 @@ export default function AdminJogosPage() {
       }
 
       setStatusMessage({
-        text: `Placar salvo! Pontuações e ranking recalculados com sucesso. (${data.result.processedPredictions} palpites processados)`,
+        text: `Placar salvo! Pontuações e ranking recalculados com sucesso. (${data.result?.processedPredictions || 0} palpites processados)`,
         type: "success",
       });
 
@@ -142,7 +154,7 @@ export default function AdminJogosPage() {
     try {
       const res = await fetch("/api/admin/matches", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           tournamentId: tournament.id,
           homeTeam: newMatch.homeTeam,
@@ -182,6 +194,7 @@ export default function AdminJogosPage() {
     try {
       const res = await fetch(`/api/admin/matches?id=${matchId}`, {
         method: "DELETE",
+        headers: getAuthHeaders(),
       });
 
       if (!res.ok) {
@@ -287,15 +300,7 @@ export default function AdminJogosPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 text-[11px] text-gray-400 mb-1.5">
                         <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                        <span>
-                          {new Date(match.matchDate).toLocaleDateString("pt-BR", {
-                            weekday: "short",
-                            day: "2-digit",
-                            month: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+                        <span>{formatMatchDate(match.matchDate)}</span>
                         {match.stadium && <span>• {match.stadium}</span>}
                         {match.status === "FINISHED" ? (
                           <span className="px-2 py-0.5 rounded-full bg-pitch-green/10 text-pitch-green font-bold text-[10px] border border-pitch-green/20">

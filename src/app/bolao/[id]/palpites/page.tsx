@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import confetti from "canvas-confetti";
 import AuthModal from "@/components/AuthModal";
+import { formatMatchDate } from "@/lib/dateUtils";
 
 interface MatchItem {
   id: string;
@@ -106,6 +107,10 @@ export default function PalpitesPage() {
 
   useEffect(() => {
     loadData();
+    const interval = setInterval(() => {
+      loadData();
+    }, 25000);
+    return () => clearInterval(interval);
   }, [tournamentId]);
 
   // Atualiza placar de um jogo no formulário local
@@ -372,13 +377,7 @@ export default function PalpitesPage() {
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-gray-400" />
                   <span className="font-medium text-gray-300">
-                    {new Date(match.matchDate).toLocaleDateString("pt-BR", {
-                      weekday: "short",
-                      day: "2-digit",
-                      month: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {formatMatchDate(match.matchDate)}
                   </span>
                   {isLocked && (
                     <span className="ml-1 px-2 py-0.5 rounded-full bg-pitch-green/10 text-pitch-green text-[10px] font-bold border border-pitch-green/20">

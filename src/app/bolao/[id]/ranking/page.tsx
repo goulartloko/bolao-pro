@@ -78,6 +78,22 @@ export default function RankingPage() {
 
   useEffect(() => {
     loadRanking();
+    const interval = setInterval(() => {
+      // Recarrega silenciosamente em segundo plano sem travar a tela
+      fetch(`/api/bolao/active?_t=${Date.now()}`, {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.tournament) {
+            setTournament(data.tournament);
+            setParticipants(data.tournament.participants || []);
+          }
+        })
+        .catch(() => {});
+    }, 20000);
+    return () => clearInterval(interval);
   }, [tournamentId]);
 
   // Encontra a posição do usuário logado

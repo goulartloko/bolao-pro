@@ -15,8 +15,8 @@ const prisma = new PrismaClient();
 
 export const REAL_MATCHES_CATALOG = {
   "QUARTA_DECISIVA": {
-    title: "Super Quarta dos Campeões - Brasileirão & Champions League",
-    description: "Rodada 100% Gratuita de Lançamento! Palpite nas partidas decisivas de amanhã (04/11) pela 34ª Rodada do Brasileirão e Champions League e concorra a R$ 500 no Pix!",
+    title: "Super Rodada dos Campeões - Brasileirão & Champions League (10 Jogos)",
+    description: "Rodada 100% Gratuita de Lançamento! Palpite nas 10 partidas decisivas de amanhã (04/11) pela 34ª Rodada do Brasileirão e Champions League e concorra a R$ 500 no Pix!",
     entryFee: 0.0,
     prizePool: 500.0,
     prizeDescription: "1º Lugar: R$ 350,00 | 2º Lugar: R$ 100,00 | 3º Lugar: R$ 50,00 via Pix",
@@ -39,6 +39,20 @@ export const REAL_MATCHES_CATALOG = {
         roundNumber: 4,
       },
       {
+        homeTeam: "Inter de Milão",
+        awayTeam: "Bayern de Munique",
+        stadium: "San Siro, Milão (Champions League)",
+        matchDate: "2026-11-04T17:00:00-03:00",
+        roundNumber: 4,
+      },
+      {
+        homeTeam: "Paris Saint-Germain",
+        awayTeam: "Atlético de Madrid",
+        stadium: "Parc des Princes, Paris (Champions League)",
+        matchDate: "2026-11-04T17:00:00-03:00",
+        roundNumber: 4,
+      },
+      {
         homeTeam: "Flamengo",
         awayTeam: "Grêmio",
         stadium: "Estádio do Maracanã, Rio de Janeiro (Brasileirão Série A)",
@@ -48,8 +62,22 @@ export const REAL_MATCHES_CATALOG = {
       {
         homeTeam: "Athletico-PR",
         awayTeam: "Vasco",
-        stadium: "Arena da Baixada, Curitiba (Brasileirão Série A)",
+        stadium: "Ligga Arena, Curitiba (Brasileirão Série A)",
         matchDate: "2026-11-04T19:30:00-03:00",
+        roundNumber: 34,
+      },
+      {
+        homeTeam: "Cruzeiro",
+        awayTeam: "Fluminense",
+        stadium: "Estádio Mineirão, Belo Horizonte (Brasileirão Série A)",
+        matchDate: "2026-11-04T20:00:00-03:00",
+        roundNumber: 34,
+      },
+      {
+        homeTeam: "Palmeiras",
+        awayTeam: "Internacional",
+        stadium: "Allianz Parque, São Paulo (Brasileirão Série A)",
+        matchDate: "2026-11-04T21:30:00-03:00",
         roundNumber: 34,
       },
       {
@@ -62,7 +90,7 @@ export const REAL_MATCHES_CATALOG = {
       {
         homeTeam: "São Paulo",
         awayTeam: "Corinthians",
-        stadium: "Estádio Vila Belmiro, Santos (Clássico Majestoso - Brasileirão)",
+        stadium: "MorumBIS, São Paulo (Clássico Majestoso - Brasileirão)",
         matchDate: "2026-11-04T21:30:00-03:00",
         roundNumber: 34,
       },

@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    await requireAdmin();
+    const authHeader = req.headers.get("authorization") || "";
+    const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.substring(7).trim() : undefined;
+    await requireAdmin(bearerToken);
 
     const {
       tournamentId,
@@ -38,6 +43,13 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath("/bolao/[id]/palpites", "page");
+    } catch {
+      // Ignora erro de revalidate se fora de contexto
+    }
+
     return NextResponse.json({ success: true, match });
   } catch (error: any) {
     console.error("Erro ao cadastrar partida:", error);
@@ -50,7 +62,9 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    await requireAdmin();
+    const authHeader = req.headers.get("authorization") || "";
+    const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.substring(7).trim() : undefined;
+    await requireAdmin(bearerToken);
 
     const { searchParams } = new URL(req.url);
     const matchId = searchParams.get("id");
@@ -62,6 +76,13 @@ export async function DELETE(req: NextRequest) {
     await prisma.match.delete({
       where: { id: matchId },
     });
+
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath("/bolao/[id]/palpites", "page");
+    } catch {
+      // Ignora erro de revalidate se fora de contexto
+    }
 
     return NextResponse.json({ success: true, message: "Partida excluída com sucesso." });
   } catch (error: any) {

@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
 const MATCH_FEEDS = {
   "QUARTA_BRASILEIRAO_CHAMPIONS": {
-    name: "Quarta Decisiva (Brasileirão Série A + Champions League)",
-    title: "Super Quarta dos Campeões - Brasileirão & Champions League",
+    name: "Super Rodada 10 Jogos (Brasileirão Série A + Champions League)",
+    title: "Super Rodada dos Campeões - Brasileirão & Champions League (10 Jogos)",
     deadline: "2026-11-04T16:59:00-03:00",
     matches: [
       {
@@ -25,30 +26,58 @@ const MATCH_FEEDS = {
         roundNumber: 4,
       },
       {
+        homeTeam: "Inter de Milão",
+        awayTeam: "Bayern de Munique",
+        stadium: "San Siro, Milão (Champions League)",
+        matchDate: "2026-11-04T17:00:00-03:00",
+        roundNumber: 4,
+      },
+      {
+        homeTeam: "Paris Saint-Germain",
+        awayTeam: "Atlético de Madrid",
+        stadium: "Parc des Princes, Paris (Champions League)",
+        matchDate: "2026-11-04T17:00:00-03:00",
+        roundNumber: 4,
+      },
+      {
         homeTeam: "Flamengo",
         awayTeam: "Grêmio",
-        stadium: "Estádio do Maracanã, Rio de Janeiro (Brasileirão)",
+        stadium: "Estádio do Maracanã, Rio de Janeiro (Brasileirão Série A)",
         matchDate: "2026-11-04T19:30:00-03:00",
         roundNumber: 34,
       },
       {
         homeTeam: "Athletico-PR",
         awayTeam: "Vasco",
-        stadium: "Arena da Baixada, Curitiba (Brasileirão)",
+        stadium: "Ligga Arena, Curitiba (Brasileirão Série A)",
         matchDate: "2026-11-04T19:30:00-03:00",
+        roundNumber: 34,
+      },
+      {
+        homeTeam: "Cruzeiro",
+        awayTeam: "Fluminense",
+        stadium: "Estádio Mineirão, Belo Horizonte (Brasileirão Série A)",
+        matchDate: "2026-11-04T20:00:00-03:00",
+        roundNumber: 34,
+      },
+      {
+        homeTeam: "Palmeiras",
+        awayTeam: "Internacional",
+        stadium: "Allianz Parque, São Paulo (Brasileirão Série A)",
+        matchDate: "2026-11-04T21:30:00-03:00",
         roundNumber: 34,
       },
       {
         homeTeam: "Botafogo",
         awayTeam: "Atlético-MG",
-        stadium: "Estádio Nilton Santos, Rio de Janeiro (Brasileirão)",
+        stadium: "Estádio Nilton Santos, Rio de Janeiro (Brasileirão Série A)",
         matchDate: "2026-11-04T21:30:00-03:00",
         roundNumber: 34,
       },
       {
         homeTeam: "São Paulo",
         awayTeam: "Corinthians",
-        stadium: "Estádio Vila Belmiro, Santos (Clássico Majestoso)",
+        stadium: "MorumBIS, São Paulo (Clássico Majestoso - Brasileirão)",
         matchDate: "2026-11-04T21:30:00-03:00",
         roundNumber: 34,
       },
@@ -114,7 +143,9 @@ const MATCH_FEEDS = {
 
 export async function POST(req: NextRequest) {
   try {
-    await requireAdmin();
+    const authHeader = req.headers.get("authorization") || "";
+    const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.substring(7).trim() : undefined;
+    await requireAdmin(bearerToken);
 
     const { feedKey, replaceExisting } = await req.json();
 
@@ -131,6 +162,10 @@ export async function POST(req: NextRequest) {
 
     // Se solicitado para substituir jogos antigos
     if (replaceExisting) {
+      // Deleta primeiro os palpites associados a partidas deste torneio
+      await prisma.prediction.deleteMany({
+        where: { match: { tournamentId: tournament.id } },
+      });
       await prisma.match.deleteMany({
         where: { tournamentId: tournament.id },
       });
@@ -161,9 +196,17 @@ export async function POST(req: NextRequest) {
       created.push(match);
     }
 
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath("/bolao/[id]/palpites", "page");
+      revalidatePath("/bolao/[id]/ranking", "page");
+    } catch {
+      // Ignora erro fora de contexto de rota
+    }
+
     return NextResponse.json({
       success: true,
-      message: `${created.length} partidas sincronizadas automaticamente com sucesso!`,
+      message: `${created.length} partidas sincronizadas com sucesso! A rodada agora possui ${created.length} jogos para evitar empates.`,
       feedName: feed.name,
       count: created.length,
     });

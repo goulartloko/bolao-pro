@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import CountdownTimer from "@/components/CountdownTimer";
+import { formatMatchDate } from "@/lib/dateUtils";
 import {
   Trophy,
   Zap,
@@ -85,6 +86,22 @@ export default async function HomePage() {
     },
     {
       id: "m3",
+      homeTeam: "Inter de Milão",
+      awayTeam: "Bayern de Munique",
+      stadium: "San Siro, Milão (Champions League)",
+      matchDate: new Date("2026-11-04T17:00:00-03:00"),
+      status: "SCHEDULED",
+    },
+    {
+      id: "m4",
+      homeTeam: "Paris Saint-Germain",
+      awayTeam: "Atlético de Madrid",
+      stadium: "Parc des Princes, Paris (Champions League)",
+      matchDate: new Date("2026-11-04T17:00:00-03:00"),
+      status: "SCHEDULED",
+    },
+    {
+      id: "m5",
       homeTeam: "Flamengo",
       awayTeam: "Grêmio",
       stadium: "Estádio do Maracanã, Rio de Janeiro (Brasileirão Série A)",
@@ -92,26 +109,42 @@ export default async function HomePage() {
       status: "SCHEDULED",
     },
     {
-      id: "m4",
+      id: "m6",
       homeTeam: "Athletico-PR",
       awayTeam: "Vasco",
-      stadium: "Arena da Baixada, Curitiba (Brasileirão Série A)",
+      stadium: "Ligga Arena, Curitiba (Brasileirão Série A)",
       matchDate: new Date("2026-11-04T19:30:00-03:00"),
       status: "SCHEDULED",
     },
     {
-      id: "m5",
-      homeTeam: "São Paulo",
-      awayTeam: "Corinthians",
-      stadium: "Estádio Vila Belmiro, Santos (Clássico Majestoso - Brasileirão)",
+      id: "m7",
+      homeTeam: "Cruzeiro",
+      awayTeam: "Fluminense",
+      stadium: "Estádio Mineirão, Belo Horizonte (Brasileirão Série A)",
+      matchDate: new Date("2026-11-04T20:00:00-03:00"),
+      status: "SCHEDULED",
+    },
+    {
+      id: "m8",
+      homeTeam: "Palmeiras",
+      awayTeam: "Internacional",
+      stadium: "Allianz Parque, São Paulo (Brasileirão Série A)",
       matchDate: new Date("2026-11-04T21:30:00-03:00"),
       status: "SCHEDULED",
     },
     {
-      id: "m6",
+      id: "m9",
       homeTeam: "Botafogo",
       awayTeam: "Atlético-MG",
       stadium: "Estádio Nilton Santos, Rio de Janeiro (Brasileirão Série A)",
+      matchDate: new Date("2026-11-04T21:30:00-03:00"),
+      status: "SCHEDULED",
+    },
+    {
+      id: "m10",
+      homeTeam: "São Paulo",
+      awayTeam: "Corinthians",
+      stadium: "MorumBIS, São Paulo (Clássico Majestoso - Brasileirão)",
       matchDate: new Date("2026-11-04T21:30:00-03:00"),
       status: "SCHEDULED",
     },
@@ -264,13 +297,7 @@ export default async function HomePage() {
                     )}
                   </div>
                   <span className="font-mono font-bold text-gold-400">
-                    {new Date(match.matchDate).toLocaleDateString("pt-BR", {
-                      weekday: "short",
-                      day: "2-digit",
-                      month: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {formatMatchDate(match.matchDate)}
                   </span>
                 </div>
 
