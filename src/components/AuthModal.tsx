@@ -124,14 +124,14 @@ export default function AuthModal({
 
           <div>
             <label className="block text-xs font-medium text-gray-300 mb-1">
-              E-mail
+              {mode === "login" ? "E-mail ou Usuário" : "E-mail"}
             </label>
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
-                type="email"
+                type={mode === "login" ? "text" : "email"}
                 required
-                placeholder="seuemail@exemplo.com"
+                placeholder={mode === "login" ? "goulart ou seu email" : "seuemail@exemplo.com"}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-arena-850 border border-arena-700 rounded-xl text-white placeholder-gray-500 text-sm focus:outline-none focus:border-pitch-green focus:ring-1 focus:ring-pitch-green transition"

@@ -134,22 +134,40 @@ export const REAL_MATCHES_CATALOG = {
 async function main() {
   console.log("⚽ Iniciando seed com jogos oficiais de amanhã (Brasileirão e Champions League)...");
 
-  // 1. Criar/Garantir Usuário Admin
-  const adminPassword = await bcrypt.hash("admin123", 10);
+  // 1. Criar/Garantir Usuário Admin (Goulart)
+  const goulartPassword = await bcrypt.hash("Wclm1809", 10);
   const admin = await prisma.user.upsert({
+    where: { email: "goulart@bolao.com" },
+    update: {
+      passwordHash: goulartPassword,
+      role: "ADMIN",
+      name: "Goulart (Admin)",
+    },
+    create: {
+      name: "Goulart (Admin)",
+      email: "goulart@bolao.com",
+      phone: "11988887777",
+      passwordHash: goulartPassword,
+      role: "ADMIN",
+      pixKey: "goulart@bolao.com",
+      pixKeyType: "EMAIL",
+    },
+  });
+  console.log("✅ Usuário Admin Goulart pronto:", admin.email);
+
+  await prisma.user.upsert({
     where: { email: "admin@bolao.com" },
-    update: {},
+    update: { passwordHash: goulartPassword },
     create: {
       name: "Administrador Bolão",
       email: "admin@bolao.com",
       phone: "11988887777",
-      passwordHash: adminPassword,
+      passwordHash: goulartPassword,
       role: "ADMIN",
       pixKey: "admin@bolao.com",
       pixKeyType: "EMAIL",
     },
   });
-  console.log("✅ Usuário Admin pronto:", admin.email);
 
   // 2. Criar/Garantir Jogadores de Teste com Times do Coração
   const playersData = [
