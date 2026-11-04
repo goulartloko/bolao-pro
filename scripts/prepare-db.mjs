@@ -32,11 +32,11 @@ if (databaseUrl.startsWith("postgres://") || databaseUrl.startsWith("postgresql:
 
   try {
     console.log("🔄 [Deploy] Sincronizando tabelas no PostgreSQL (prisma db push)...");
-    execSync("npx prisma db push --accept-data-loss", { stdio: "inherit" });
+    execSync("npx prisma db push --accept-data-loss", { stdio: "inherit", env: process.env });
     console.log("✅ [Deploy] Tabelas do PostgreSQL sincronizadas com sucesso!");
 
     console.log("🌱 [Deploy] Populando partidas reais e dados iniciais no PostgreSQL...");
-    execSync("node scripts/seed.mjs", { stdio: "inherit" });
+    execSync("node scripts/seed.mjs", { stdio: "inherit", env: process.env });
     console.log("✅ [Deploy] Seed concluído com sucesso!");
   } catch (err) {
     console.warn("⚠️ [Deploy Warning] Erro durante push/seed automático:", err.message);

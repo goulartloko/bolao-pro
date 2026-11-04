@@ -36,6 +36,9 @@ export async function GET() {
     return NextResponse.json({ tournament });
   } catch (error: any) {
     console.error("Erro ao buscar bolão ativo:", error);
-    return NextResponse.json({ error: "Erro interno ao buscar bolão ativo." }, { status: 500 });
+    return NextResponse.json(
+      { error: "Erro interno ao buscar bolão ativo.", details: error?.message || String(error) },
+      { status: 500 }
+    );
   }
 }
