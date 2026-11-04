@@ -37,7 +37,9 @@ async function reorderTournamentRanking(tournamentId: string) {
 
 export async function POST(req: NextRequest) {
   try {
-    await requireAdmin();
+    const authHeader = req.headers.get("authorization") || "";
+    const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.substring(7).trim() : undefined;
+    await requireAdmin(bearerToken);
 
     const body = await req.json();
     const { participantId, action, value, delta, userData } = body;

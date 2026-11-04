@@ -28,7 +28,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   async function checkAdminAuth() {
     try {
-      const res = await fetch("/api/auth/me");
+      const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
+      const res = await fetch("/api/auth/me", {
+        headers: localToken ? { Authorization: `Bearer ${localToken}` } : {},
+      });
       const data = await res.json();
       if (data.authenticated && data.user?.role === "ADMIN") {
         setIsAdmin(true);
@@ -53,7 +56,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: adminEmail, password: adminPassword }),
+        body: JSON.stringify({ email: adminEmail.trim(), password: adminPassword.trim() }),
       });
 
       const data = await res.json();
@@ -63,7 +66,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         throw new Error("Acesso negado: esta conta não possui privilégios de Administrador.");
       }
 
+      if (data.token) {
+        localStorage.setItem("bolao_admin_token", data.token);
+      }
+
       setIsAdmin(true);
+      window.location.reload();
     } catch (err: any) {
       setAuthError(err.message);
     } finally {

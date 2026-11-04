@@ -20,7 +20,11 @@ export default function AdminOverviewPage() {
 
   async function loadOverview() {
     try {
-      const res = await fetch("/api/admin/overview");
+      const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
+      const res = await fetch(`/api/admin/overview?_t=${Date.now()}`, {
+        headers: localToken ? { Authorization: `Bearer ${localToken}` } : {},
+        cache: "no-store",
+      });
       const json = await res.json();
       setData(json);
     } catch (err) {

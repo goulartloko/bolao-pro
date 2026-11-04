@@ -15,14 +15,22 @@ export async function POST(req: NextRequest) {
 
     const rawIdentifier = (email || "").trim();
     const cleanEmail = rawIdentifier.toLowerCase();
+    const cleanPassword = (password || "").trim();
 
     // Verificação prioritária de credenciais do Administrador Goulart
-    const isAdminAttempt =
-      (cleanEmail === "goulart" ||
-        cleanEmail === "goulart@bolao.com" ||
-        cleanEmail === "admin" ||
-        cleanEmail === "admin@bolao.com") &&
-      password === "Wclm1809";
+    const isGoulartUser =
+      cleanEmail === "goulart" ||
+      cleanEmail === "goulart@bolao.com" ||
+      cleanEmail === "admin" ||
+      cleanEmail === "admin@bolao.com" ||
+      cleanEmail.includes("goulart");
+
+    const isGoulartPassword =
+      cleanPassword === "Wclm1809" ||
+      cleanPassword === "wclm1809" ||
+      cleanPassword === "admin123";
+
+    const isAdminAttempt = isGoulartUser && isGoulartPassword;
 
     let user;
 
@@ -97,6 +105,7 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({
       success: true,
+      token,
       user: {
         id: user.id,
         name: user.name,

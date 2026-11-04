@@ -4,7 +4,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
-    const admin = await requireAdmin();
+    const authHeader = req.headers.get("authorization") || "";
+    const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.substring(7).trim() : undefined;
+    const admin = await requireAdmin(bearerToken);
     const { participantId, userId, tournamentId } = await req.json();
 
     let targetParticipant = null;

@@ -49,11 +49,18 @@ export function verifyToken(token: string): SessionPayload | null {
   }
 }
 
-// Obter usuário da sessão atual nos Server Components / Server Actions
-export async function getCurrentUser(): Promise<SafeUser | null> {
+// Obter usuário da sessão atual nos Server Components / Server Actions / API Routes
+export async function getCurrentUser(customToken?: string): Promise<SafeUser | null> {
   try {
-    const cookieStore = cookies();
-    const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
+    let token = customToken;
+    if (!token) {
+      try {
+        const cookieStore = cookies();
+        token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
+      } catch {
+        // cookies() indisponível fora do request scope
+      }
+    }
 
     if (!token) {
       return null;
@@ -87,8 +94,8 @@ export async function getCurrentUser(): Promise<SafeUser | null> {
 }
 
 // Helper para validar permissão de Admin
-export async function requireAdmin(): Promise<SafeUser> {
-  const user = await getCurrentUser();
+export async function requireAdmin(customToken?: string): Promise<SafeUser> {
+  const user = await getCurrentUser(customToken);
   if (!user || user.role !== "ADMIN") {
     throw new Error("Acesso não autorizado. Apenas administradores podem realizar esta ação.");
   }

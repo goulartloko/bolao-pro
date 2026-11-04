@@ -62,7 +62,11 @@ export default function AdminParticipantesPage() {
 
   async function loadData() {
     try {
-      const res = await fetch("/api/admin/overview");
+      const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
+      const res = await fetch(`/api/admin/overview?_t=${Date.now()}`, {
+        headers: localToken ? { Authorization: `Bearer ${localToken}` } : {},
+        cache: "no-store",
+      });
       const data = await res.json();
       if (data.tournament) {
         setParticipants(data.tournament.participants || []);
@@ -78,6 +82,14 @@ export default function AdminParticipantesPage() {
     loadData();
   }, []);
 
+  function getAuthHeaders() {
+    const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
+    return {
+      "Content-Type": "application/json",
+      ...(localToken ? { Authorization: `Bearer ${localToken}` } : {}),
+    };
+  }
+
   // Alterar Pontos Rápido (+5, +1, -1, -5)
   async function handleQuickPoints(participantId: string, delta: number) {
     setActionLoadingId(participantId);
@@ -86,7 +98,7 @@ export default function AdminParticipantesPage() {
     try {
       const res = await fetch("/api/admin/participants/manage", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           participantId,
           action: "UPDATE_POINTS",
@@ -116,7 +128,7 @@ export default function AdminParticipantesPage() {
     try {
       const res = await fetch("/api/admin/participants/manage", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           participantId,
           action: "RESET_PREDICTIONS",
@@ -151,7 +163,7 @@ export default function AdminParticipantesPage() {
     try {
       const res = await fetch("/api/admin/participants/manage", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           participantId: firstId,
           action: "RESET_ALL_POINTS",
@@ -180,7 +192,7 @@ export default function AdminParticipantesPage() {
     try {
       const res = await fetch("/api/admin/participants/manage", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           participantId,
           action: "DELETE",
@@ -208,7 +220,7 @@ export default function AdminParticipantesPage() {
     try {
       const res = await fetch("/api/admin/participants/manage", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           participantId: editingParticipant.id,
           action: "UPDATE_USER_DATA",
@@ -250,7 +262,7 @@ export default function AdminParticipantesPage() {
     try {
       const res = await fetch("/api/admin/participants/approve", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ participantId }),
       });
 
