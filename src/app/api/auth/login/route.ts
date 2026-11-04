@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("Erro no login:", error);
     return NextResponse.json(
-      { error: "Ocorreu um erro ao realizar o login." },
+      { error: "Ocorreu um erro ao realizar o login.", details: error?.message || String(error) },
       { status: 500 }
     );
   }

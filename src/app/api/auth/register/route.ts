@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("Erro no cadastro:", error);
     return NextResponse.json(
-      { error: "Ocorreu um erro ao processar o cadastro." },
+      { error: "Ocorreu um erro ao processar o cadastro.", details: error?.message || String(error) },
       { status: 500 }
     );
   }
