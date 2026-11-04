@@ -2,7 +2,18 @@ import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
 
-const databaseUrl = process.env.DATABASE_URL || "";
+const databaseUrl =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.ARMAZENAR_URL ||
+  process.env.STORAGE_URL ||
+  process.env.ARMAZENAR_PRISMA_URL ||
+  "";
+
+if (databaseUrl && !process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = databaseUrl;
+}
 
 console.log("====================================================");
 console.log("⚽ BolãoPro Database Setup hook");

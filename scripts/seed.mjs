@@ -1,6 +1,16 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL =
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.ARMAZENAR_URL ||
+    process.env.STORAGE_URL ||
+    process.env.ARMAZENAR_PRISMA_URL ||
+    "";
+}
+
 const prisma = new PrismaClient();
 
 export const REAL_MATCHES_CATALOG = {
