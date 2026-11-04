@@ -52,10 +52,31 @@ export default function AdminJogosPage() {
     };
   }
 
+  const [syncingResults, setSyncingResults] = useState(false);
+
+  async function handleSyncResults() {
+    setSyncingResults(true);
+    setStatusMessage(null);
+    try {
+      const res = await fetch("/api/admin/matches/sync-results", {
+        method: "POST",
+        headers: getAuthHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setStatusMessage({ text: data.message, type: "success" });
+      loadData();
+    } catch (err: any) {
+      setStatusMessage({ text: err.message, type: "error" });
+    } finally {
+      setSyncingResults(false);
+    }
+  }
+
   async function handleSyncApiFutebol(rodada: number = 34) {
     if (
       !confirm(
-        `Deseja sincronizar as partidas da ${rodada}ª Rodada do Brasileirão via API Futebol Oficial (trazendo somente jogos não iniciados)?`
+        `⚠️ ATENÇÃO: Esta ação é para IMPORTAR UMA NOVA RODADA COMPLETA e substituir as partidas.\n\nSe você deseja apenas verificar e pontuar os jogos que já terminaram, utilize o botão "Atualizar Resultados dos Jogos (API Futebol)".\n\nDeseja realmente continuar?`
       )
     )
       return;
@@ -257,17 +278,17 @@ export default function AdminJogosPage() {
 
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => handleSyncApiFutebol(34)}
-            disabled={syncing}
-            className="py-2.5 px-3.5 bg-pitch-green hover:bg-pitch-light text-arena-950 font-extrabold rounded-xl text-xs transition shadow-glow flex items-center justify-center gap-1.5 disabled:opacity-50"
-            title="Puxar partidas da 34ª Rodada da API Futebol trazendo apenas jogos não iniciados"
+            onClick={handleSyncResults}
+            disabled={syncingResults}
+            className="py-2.5 px-3.5 bg-pitch-green hover:bg-pitch-light text-arena-950 font-black rounded-xl text-xs transition shadow-glow flex items-center justify-center gap-1.5 disabled:opacity-50"
+            title="Verifica se algum jogo desta rodada encerrou na API Futebol e calcula os pontos e ranking automaticamente"
           >
-            {syncing ? (
+            {syncingResults ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <>
                 <Zap className="w-4 h-4 text-arena-950" />
-                <span>⚡ API Futebol: Rodada 34 (Jogos Não Iniciados)</span>
+                <span>⚡ Atualizar Resultados dos Jogos (API Futebol)</span>
               </>
             )}
           </button>
