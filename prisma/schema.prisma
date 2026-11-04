@@ -1,0 +1,190 @@
+// =============================================================================
+// SCHEMA PRISMA LOCAL: SQLITE (Zero-Configuração para Desenvolvimento Local)
+// =============================================================================
+// Banco de dados local em arquivo dev.db. 
+// Para alternar para PostgreSQL em produção, veja prisma/schema.postgresql.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String
+  passwordHash String
+  role         String   @default("PLAYER") // ADMIN ou PLAYER
+  pixKey       String?
+  pixKeyType   String?
+  avatar       String?
+  favoriteTeam String? // Time do coração (Flamengo, Palmeiras, São Paulo, Corinthians, etc.)
+
+  participants Participant[]
+  predictions  Prediction[]
+  payments     Payment[]
+  chatMessages ChatMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+model Tournament {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  type        String   @default("ROUND_WEEKLY") // ROUND_WEEKLY ou MONTHLY_LEAGUE
+  status      String   @default("OPEN") // DRAFT, OPEN, IN_PROGRESS, FINISHED, CANCELLED
+  isActive    Boolean  @default(true)
+
+  entryFee         Float   @default(10.00)
+  prizePool        Float   @default(200.00)
+  prizeDescription String? @default("1º Lugar: 100% da premiação")
+
+  exactScorePoints Int @default(10)
+  winnerPoints     Int @default(5)
+  goalDiffPoints   Int @default(2)
+
+  startDate           DateTime
+  endDate             DateTime
+  deadlinePredictions DateTime
+
+  matches      Match[]
+  participants Participant[]
+  payments     Payment[]
+  chatMessages ChatMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, isActive])
+  @@index([type])
+}
+
+model Match {
+  id           String      @id @default(cuid())
+  tournamentId String
+  tournament   Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  homeTeam     String
+  awayTeam     String
+  homeTeamLogo String?
+  awayTeamLogo String?
+  stadium      String?
+  matchDate    DateTime
+  roundNumber  Int?        @default(1)
+
+  status    String   @default("SCHEDULED") // SCHEDULED, LIVE, FINISHED, POSTPONED
+  homeScore Int?
+  awayScore Int?
+
+  predictions Prediction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tournamentId])
+  @@index([matchDate])
+  @@index([status])
+}
+
+model Participant {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  paymentStatus String    @default("PENDING") // PENDING, PAID, CANCELLED, REFUNDED
+  paidAt        DateTime?
+
+  totalPoints      Int  @default(0)
+  exactScoresCount Int  @default(0)
+  winnerPicksCount Int  @default(0)
+  rankPosition     Int?
+
+  predictions Prediction[]
+  payments    Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, tournamentId])
+  @@index([tournamentId, paymentStatus])
+  @@index([tournamentId, totalPoints, exactScoresCount])
+}
+
+model Payment {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  participantId String?
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: SetNull)
+
+  provider          String        @default("MERCADO_PAGO")
+  providerPaymentId String?       @unique
+  status            String        @default("PENDING") // PENDING, PAID, CANCELLED
+  amount            Float
+
+  qrCodeBase64   String?
+  qrCodeCopyPaste String?
+  ticketUrl      String?
+  rawWebhookData String?
+
+  expiresAt DateTime?
+  paidAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([providerPaymentId])
+  @@index([userId, tournamentId])
+  @@index([status])
+}
+
+model Prediction {
+  id            String           @id @default(cuid())
+  participantId String
+  participant   Participant      @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchId       String
+  match         Match            @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  homeScore Int
+  awayScore Int
+
+  pointsEarned Int    @default(0)
+  scoreType    String @default("NONE") // NONE, EXACT, WINNER_WITH_DIFF, WINNER_ONLY
+  isLocked     Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([participantId, matchId])
+  @@index([matchId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id           String     @id @default(cuid())
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message      String
+  createdAt    DateTime   @default(now())
+
+  @@index([tournamentId, createdAt])
+}
