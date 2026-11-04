@@ -57,8 +57,11 @@ export default function RankingPage() {
         setCurrentUser(meData.user);
       }
 
-      // 2. Bolão e participantes
-      const bolaoRes = await fetch(`/api/bolao/active`);
+      // 2. Bolão e participantes (sem cache para atualização em tempo real)
+      const bolaoRes = await fetch(`/api/bolao/active?_t=${Date.now()}`, {
+        cache: "no-store",
+        headers: { "Pragma": "no-cache", "Cache-Control": "no-cache" },
+      });
       if (bolaoRes.ok) {
         const data = await bolaoRes.json();
         if (data.tournament) {
@@ -85,7 +88,7 @@ export default function RankingPage() {
     const position = myParticipant?.rankPosition || "participando";
     const points = myParticipant?.totalPoints || 0;
     const exacts = myParticipant?.exactScoresCount || 0;
-    const bolaoTitle = tournament?.title || "Bolão Pro";
+    const bolaoTitle = tournament?.title || "Bolão dos Cria";
 
     const text = encodeURIComponent(
       `⚽ *${bolaoTitle}*\n` +
@@ -101,7 +104,7 @@ export default function RankingPage() {
   async function copyForInstagram() {
     const position = myParticipant?.rankPosition || "1";
     const points = myParticipant?.totalPoints || 0;
-    const text = `⚽ ${tournament?.title || "Bolão Pro"}\n🏆 Estou em ${position}º Lugar com ${points} pts!\n👉 Faça seu palpite no link da bio!`;
+    const text = `⚽ ${tournament?.title || "Bolão dos Cria"}\n🏆 Estou em ${position}º Lugar com ${points} pts!\n👉 Faça seu palpite no link da bio!`;
 
     try {
       await navigator.clipboard.writeText(text);
@@ -385,7 +388,7 @@ export default function RankingPage() {
           isOpen={shareModalOpen}
           onClose={() => setShareModalOpen(false)}
           participant={myParticipant}
-          tournamentTitle={tournament?.title || "Bolão Pro"}
+          tournamentTitle={tournament?.title || "Bolão dos Cria"}
         />
       )}
     </div>

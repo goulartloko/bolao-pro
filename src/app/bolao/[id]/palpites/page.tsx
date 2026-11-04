@@ -191,7 +191,7 @@ export default function PalpitesPage() {
 
   // Compartilhar no WhatsApp
   function sharePredictions() {
-    const title = tournament?.title || "Bolão Pro";
+    const title = tournament?.title || "Bolão dos Cria";
     const text = encodeURIComponent(
       `⚽ *Meus Palpites no ${title}*\n` +
       `🔥 Já enviei e travei meus palpites da rodada! Acompanhe a classificação em tempo real:\n` +

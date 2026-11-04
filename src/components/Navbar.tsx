@@ -68,13 +68,10 @@ export default function Navbar() {
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-extrabold text-lg tracking-tight text-white">
-                  BOLÃO<span className="text-pitch-green">PRO</span>
-                </span>
-                <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase rounded bg-pitch-green/20 text-pitch-green border border-pitch-green/30">
-                  SaaS
+                  BOLÃO DOS <span className="text-pitch-green">CRIA</span>
                 </span>
               </div>
-              <p className="text-[10px] text-gray-400 -mt-1 hidden sm:block">Palpites Automatizados</p>
+              <p className="text-[10px] text-gray-400 -mt-0.5 hidden sm:block">Palpites de Futebol</p>
             </div>
           </Link>
 

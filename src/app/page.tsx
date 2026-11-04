@@ -419,7 +419,7 @@ export default async function HomePage() {
       {/* FOOTER */}
       <footer className="mt-14 py-8 border-t border-arena-800/80 text-center text-xs text-gray-500">
         <p className="max-w-md mx-auto px-4">
-          Bolão Pro © 2026. Plataforma automatizada de palpites esportivos.
+          Bolão dos Cria © 2026. Plataforma de palpites esportivos.
         </p>
       </footer>
     </div>

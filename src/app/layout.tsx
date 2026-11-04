@@ -4,9 +4,9 @@ import Navbar from "@/components/Navbar";
 import BottomNav from "@/components/BottomNav";
 
 export const metadata: Metadata = {
-  title: "Bolão Pro - SaaS de Palpites de Futebol Automatizado",
+  title: "Bolão dos Cria - Palpites de Futebol",
   description:
-    "Participe de bolões por rodada ou liga mensal. Pague via Pix instantâneo, envie seus palpites e dispute a premiação em dinheiro com ranking em tempo real!",
+    "Participe dos bolões do Bolão dos Cria. Envie seus palpites nos jogos decisivos e dispute a premiação no Pix com ranking em tempo real!",
 };
 
 export const viewport: Viewport = {

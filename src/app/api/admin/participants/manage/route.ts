@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 /**
  * Função auxiliar para reordenar posições no ranking após qualquer alteração
@@ -23,6 +25,13 @@ async function reorderTournamentRanking(tournamentId: string) {
       where: { id: ranked[index].id },
       data: { rankPosition: index + 1 },
     });
+  }
+
+  try {
+    revalidatePath("/", "layout");
+    revalidatePath(`/bolao/${tournamentId}/ranking`, "page");
+  } catch (e) {
+    console.error("Erro ao purgar cache:", e);
   }
 }
 
@@ -187,6 +196,22 @@ export async function POST(req: NextRequest) {
         }
 
         message = `Dados cadastrais e pontuação de ${updateUserData.name || participant.user.name} foram atualizados com sucesso!`;
+        break;
+      }
+
+      // 7. Zerar Todas as Pontuações e Cravadas do Bolão (Início Oficial Limpo)
+      case "RESET_ALL_POINTS": {
+        await prisma.participant.updateMany({
+          where: { tournamentId: participant.tournamentId },
+          data: {
+            totalPoints: 0,
+            exactScoresCount: 0,
+            winnerPicksCount: 0,
+            rankPosition: 1,
+          },
+        });
+        await reorderTournamentRanking(participant.tournamentId);
+        message = "Todas as pontuações e cravadas do bolão foram ZERADAS com sucesso! Classificação geral limpa para a rodada.";
         break;
       }
 

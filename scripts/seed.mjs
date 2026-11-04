@@ -248,13 +248,13 @@ async function main() {
   }
   console.log(`✅ ${createdMatches.length} Partidas Oficiais (Brasileirão + Champions League) cadastradas!`);
 
-  // 6. Cadastrar Participantes e Palpites de Demonstração
+  // 6. Cadastrar Participantes e Palpites de Demonstração (Início com 0 pontos)
   const mockScores = [
-    { points: 27, exacts: 2, winners: 3 },
-    { points: 22, exacts: 2, winners: 2 },
-    { points: 17, exacts: 1, winners: 2 },
-    { points: 12, exacts: 1, winners: 1 },
-    { points: 5, exacts: 0, winners: 1 },
+    { points: 0, exacts: 0, winners: 0 },
+    { points: 0, exacts: 0, winners: 0 },
+    { points: 0, exacts: 0, winners: 0 },
+    { points: 0, exacts: 0, winners: 0 },
+    { points: 0, exacts: 0, winners: 0 },
   ];
 
   for (let i = 0; i < createdPlayers.length; i++) {

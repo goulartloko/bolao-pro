@@ -20,6 +20,7 @@ import {
   X,
   Save,
   Shield,
+  RotateCcw,
 } from "lucide-react";
 import { BRAZILIAN_TEAMS, getTeamByName } from "@/lib/teams";
 
@@ -119,6 +120,41 @@ export default function AdminParticipantesPage() {
         body: JSON.stringify({
           participantId,
           action: "RESET_PREDICTIONS",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      setStatusMessage({ text: data.message, type: "success" });
+      loadData();
+    } catch (err: any) {
+      setStatusMessage({ text: err.message, type: "error" });
+    } finally {
+      setActionLoadingId(null);
+    }
+  }
+
+  // Zerar Todos os Pontos e Cravadas da Rodada
+  async function handleResetAllPoints() {
+    if (participants.length === 0) return;
+    if (
+      !confirm(
+        "⚠️ TEM CERTEZA que deseja ZERAR todos os pontos e cravadas de TODOS os participantes da rodada? Todos voltarão para 0 pontos para início limpo."
+      )
+    ) {
+      return;
+    }
+
+    const firstId = participants[0].id;
+    setActionLoadingId("ALL");
+    try {
+      const res = await fetch("/api/admin/participants/manage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          participantId: firstId,
+          action: "RESET_ALL_POINTS",
         }),
       });
 
@@ -267,6 +303,18 @@ export default function AdminParticipantesPage() {
             Controle total: aumente/diminua pontos, destrave palpites, altere status de pagamento e exclua participantes.
           </p>
         </div>
+
+        {participants.length > 0 && (
+          <button
+            onClick={handleResetAllPoints}
+            disabled={actionLoadingId === "ALL"}
+            className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold transition shadow-sm self-start sm:self-auto disabled:opacity-50"
+            title="Zerar todos os pontos e cravadas da classificação geral para início limpo"
+          >
+            <RotateCcw className={`w-4 h-4 ${actionLoadingId === "ALL" ? "animate-spin" : ""}`} />
+            <span>Zerar Todos os Pontos da Geral</span>
+          </button>
+        )}
       </div>
 
       {statusMessage && (

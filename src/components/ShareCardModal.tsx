@@ -256,7 +256,7 @@ export default function ShareCardModal({
   }
 
   async function handleShareMobile() {
-    const text = `⚽ Olha minha posição no ranking do Bolão Pro: ${participant.rankPosition || 1}º Lugar com ${participant.totalPoints} pontos! Duvido você me passar: ${window.location.origin}`;
+    const text = `⚽ Olha minha posição no ranking do Bolão dos Cria: ${participant.rankPosition || 1}º Lugar com ${participant.totalPoints} pontos! Duvido você me passar: ${window.location.origin}`;
 
     if (navigator.share && imageUrl) {
       try {
@@ -264,7 +264,7 @@ export default function ShareCardModal({
         const file = new File([blob], "meu-ranking-bolao.png", { type: "image/png" });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
-            title: "Meu Desempenho no Bolão Pro",
+            title: "Meu Desempenho no Bolão dos Cria",
             text,
             files: [file],
           });
