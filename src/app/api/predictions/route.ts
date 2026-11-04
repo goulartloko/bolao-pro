@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(req);
 
     if (!user) {
       return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(req);
 
     if (!user) {
       return NextResponse.json({ error: "Você precisa estar conectado." }, { status: 401 });
@@ -62,8 +62,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Valida se o usuário pagou o Pix
-    const participant = await prisma.participant.findUnique({
+    // 1. Busca o torneio e as partidas para verificar os horários de bloqueio
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: tournamentId },
+      include: { matches: true },
+    });
+
+    if (!tournament) {
+      return NextResponse.json({ error: "Bolão não encontrado." }, { status: 404 });
+    }
+
+    const now = new Date();
+
+    // 2. Cálculo do prazo rigoroso: 5 minutos antes do primeiro jogo
+    const matchTimes = tournament.matches.map((m) => new Date(m.matchDate).getTime());
+    const earliestMatchTime = matchTimes.length > 0 ? Math.min(...matchTimes) : null;
+    const fiveMinBeforeFirst = earliestMatchTime ? earliestMatchTime - 5 * 60 * 1000 : null;
+
+    let effectiveDeadlineMs = new Date(tournament.deadlinePredictions).getTime();
+    if (fiveMinBeforeFirst && fiveMinBeforeFirst < effectiveDeadlineMs) {
+      effectiveDeadlineMs = fiveMinBeforeFirst;
+    }
+
+    if (now.getTime() >= effectiveDeadlineMs) {
+      return NextResponse.json(
+        {
+          error:
+            "Prazo encerrado: os palpites são bloqueados exatamente 5 minutos antes do início do primeiro jogo da rodada para garantir a apuração oficial.",
+        },
+        { status: 403 }
+      );
+    }
+
+    // 3. Valida ou inscreve o participante (se gratuito, aprova automaticamente)
+    let participant = await prisma.participant.findUnique({
       where: {
         userId_tournamentId: {
           userId: user.id,
@@ -71,6 +103,21 @@ export async function POST(req: NextRequest) {
         },
       },
     });
+
+    if (!participant && tournament.entryFee === 0) {
+      participant = await prisma.participant.create({
+        data: {
+          userId: user.id,
+          tournamentId,
+          paymentStatus: "PAID",
+          paidAt: new Date(),
+          totalPoints: 0,
+          exactScoresCount: 0,
+          winnerPicksCount: 0,
+          rankPosition: 1,
+        },
+      });
+    }
 
     if (!participant || participant.paymentStatus !== "PAID") {
       return NextResponse.json(
@@ -94,26 +141,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Busca o torneio e as partidas para verificar os horários de bloqueio
-    const tournament = await prisma.tournament.findUnique({
-      where: { id: tournamentId },
-      include: { matches: true },
-    });
-
-    if (!tournament) {
-      return NextResponse.json({ error: "Bolão não encontrado." }, { status: 404 });
-    }
-
-    const now = new Date();
-
-    // Se o prazo geral já expirou
-    if (now > new Date(tournament.deadlinePredictions)) {
-      return NextResponse.json(
-        { error: "O prazo limite para envio de palpites deste bolão já expirou." },
-        { status: 400 }
-      );
-    }
-
     const matchMap = new Map(tournament.matches.map((m) => [m.id, m]));
     const results = [];
 
@@ -121,8 +148,9 @@ export async function POST(req: NextRequest) {
       const match = matchMap.get(item.matchId);
       if (!match) continue;
 
-      // Bloqueio automático: se o jogo já começou ou está finalizado, não aceita palpite
-      if (now >= new Date(match.matchDate) || match.status !== "SCHEDULED") {
+      // Bloqueio rigoroso por partida: 5 minutos antes do início do jogo
+      const matchDeadlineMs = new Date(match.matchDate).getTime() - 5 * 60 * 1000;
+      if (now.getTime() >= matchDeadlineMs || match.status !== "SCHEDULED") {
         continue;
       }
 

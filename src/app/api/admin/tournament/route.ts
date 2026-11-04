@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   try {
-    await requireAdmin();
+    await requireAdmin(req);
 
     const data = await req.json();
     const {

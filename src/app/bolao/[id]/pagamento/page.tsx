@@ -35,8 +35,14 @@ export default function PagamentoPage() {
     setError(null);
 
     try {
+      const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
+      const authHeaders: Record<string, string> = localToken ? { Authorization: `Bearer ${localToken}` } : {};
+
       // Verifica se está logado
-      const meRes = await fetch("/api/auth/me");
+      const meRes = await fetch(`/api/auth/me?_t=${Date.now()}`, {
+        headers: authHeaders,
+        cache: "no-store",
+      });
       const meData = await meRes.json();
 
       if (!meData.authenticated) {
@@ -56,7 +62,10 @@ export default function PagamentoPage() {
       // Chama a API para criar cobrança Pix
       const res = await fetch("/api/payment/create", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...authHeaders,
+        },
         body: JSON.stringify({ tournamentId }),
       });
 

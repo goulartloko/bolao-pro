@@ -74,9 +74,13 @@ export default function AdminBolaoConfigPage() {
     setError(null);
 
     try {
+      const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
       const res = await fetch("/api/admin/tournament", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(localToken ? { Authorization: `Bearer ${localToken}` } : {}),
+        },
         body: JSON.stringify(form),
       });
 

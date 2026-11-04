@@ -183,7 +183,19 @@ async function main() {
     },
   });
 
-  // 2. Criar/Garantir Jogadores de Teste com Times do Coração
+  // 2. Verificar se já existe um bolão ativo no banco de dados
+  const existingActiveTournament = await prisma.tournament.findFirst({
+    where: { isActive: true },
+    include: { matches: true },
+  });
+
+  if (existingActiveTournament) {
+    console.log(`🔒 [Seed Seguro] Bolão ativo já existente encontrado: "${existingActiveTournament.title}" (ID: ${existingActiveTournament.id}).`);
+    console.log(`🔒 [Seed Seguro] Preservando clientes reais, palpites, pontuações e premiação customizada (R$ ${existingActiveTournament.prizePool}). Nenhuma alteração destrutiva realizada.`);
+    return;
+  }
+
+  // 3. Criar/Garantir Jogadores de Teste com Times do Coração
   const playersData = [
     { name: "Lucas Ferreira", email: "lucas@exemplo.com", phone: "11999991111", favoriteTeam: "Flamengo" },
     { name: "Mariana Souza", email: "mariana@exemplo.com", phone: "21988882222", favoriteTeam: "Palmeiras" },
@@ -215,7 +227,7 @@ async function main() {
     createdPlayers.push(user);
   }
 
-  // 3. Desativar bolões antigos
+  // 4. Desativar bolões antigos (apenas se não houver bolão ativo prévio)
   await prisma.tournament.updateMany({
     data: { isActive: false },
   });

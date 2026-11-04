@@ -22,6 +22,8 @@ import ChatResenha from "@/components/ChatResenha";
 import TeamBadge from "@/components/TeamBadge";
 import { getTeamByName } from "@/lib/teams";
 
+import { parsePrizes } from "@/lib/prizes";
+
 interface RankedParticipant {
   id: string;
   rankPosition: number;
@@ -50,8 +52,14 @@ export default function RankingPage() {
   async function loadRanking() {
     setLoading(true);
     try {
+      const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
+      const authHeaders: Record<string, string> = localToken ? { Authorization: `Bearer ${localToken}` } : {};
+
       // 1. Usuário logado
-      const meRes = await fetch("/api/auth/me");
+      const meRes = await fetch(`/api/auth/me?_t=${Date.now()}`, {
+        headers: authHeaders,
+        cache: "no-store",
+      });
       const meData = await meRes.json();
       if (meData?.user?.id) {
         setCurrentUser(meData.user);
@@ -144,6 +152,7 @@ export default function RankingPage() {
   const top1 = participants[0];
   const top2 = participants[1];
   const top3 = participants[2];
+  const parsedPrizes = parsePrizes(tournament?.prizeDescription, tournament?.prizePool || 0);
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
@@ -195,6 +204,9 @@ export default function RankingPage() {
               {top2.totalPoints} pts
             </span>
             <span className="text-[10px] text-gray-400">{top2.exactScoresCount} cravadas</span>
+            <span className="text-[10px] text-gray-300 font-bold mt-1.5 bg-gray-400/10 px-2 py-0.5 rounded-md border border-gray-400/20">
+              🥈 {parsedPrizes.secondPlace}
+            </span>
           </div>
 
           {/* 1º LUGAR (MAIS ALTO / DESTAQUE OURO) */}
@@ -217,6 +229,9 @@ export default function RankingPage() {
               {top1.totalPoints} pts
             </span>
             <span className="text-[11px] text-gray-300 font-semibold">{top1.exactScoresCount} cravadas</span>
+            <span className="text-[10px] text-gold-400 font-black mt-1.5 bg-gold-500/10 px-2.5 py-0.5 rounded-md border border-gold-500/30 shadow-goldglow">
+              🏆 {parsedPrizes.firstPlace}
+            </span>
           </div>
 
           {/* 3º LUGAR */}
@@ -236,6 +251,11 @@ export default function RankingPage() {
               {top3.totalPoints} pts
             </span>
             <span className="text-[10px] text-gray-400">{top3.exactScoresCount} cravadas</span>
+            {parsedPrizes.thirdPlace && (
+              <span className="text-[10px] text-amber-500 font-bold mt-1.5 bg-amber-700/10 px-2 py-0.5 rounded-md border border-amber-700/20">
+                🥉 {parsedPrizes.thirdPlace}
+              </span>
+            )}
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import CountdownTimer from "@/components/CountdownTimer";
 import { formatMatchDate } from "@/lib/dateUtils";
+import { parsePrizes } from "@/lib/prizes";
 import {
   Trophy,
   Zap,
@@ -56,15 +57,15 @@ export default async function HomePage() {
   // Dados oficiais de fallback caso necessário
   const activeTournament = tournament || {
     id: "demo-tournament",
-    title: "Super Quarta dos Campeões - Brasileirão & Champions League",
+    title: "Brasileirão Série A - 34ª Rodada (Jogos Não Iniciados)",
     type: "ROUND_WEEKLY",
-    prizePool: 500,
+    prizePool: 50,
     entryFee: 0,
-    deadlinePredictions: "2026-11-04T16:59:00-03:00",
+    deadlinePredictions: "2026-11-04T19:25:00-03:00",
     exactScorePoints: 10,
     winnerPoints: 5,
     goalDiffPoints: 2,
-    prizeDescription: "1º Lugar leva R$ 350,00 no Pix | 2º Lugar leva R$ 100,00 | 3º Lugar leva R$ 50,00",
+    prizeDescription: "1º Lugar: R$ 50,00 | 2º Lugar: R$ 30,00",
   };
 
   const displayMatches = matches.length > 0 ? matches : [
@@ -134,10 +135,24 @@ export default async function HomePage() {
     },
   ];
 
+  const parsedPrizes = parsePrizes(activeTournament.prizeDescription, activeTournament.prizePool);
+
+  const matchTimes = displayMatches.map((m: any) => new Date(m.matchDate).getTime());
+  const earliestMatchTime = matchTimes.length > 0 ? Math.min(...matchTimes) : null;
+  const fiveMinBeforeFirst = earliestMatchTime ? earliestMatchTime - 5 * 60 * 1000 : null;
+
+  let effectiveDeadlineMs = activeTournament.deadlinePredictions
+    ? new Date(activeTournament.deadlinePredictions).getTime()
+    : 0;
+  if (fiveMinBeforeFirst && (effectiveDeadlineMs === 0 || fiveMinBeforeFirst < effectiveDeadlineMs)) {
+    effectiveDeadlineMs = fiveMinBeforeFirst;
+  }
+  const effectiveDeadline = new Date(effectiveDeadlineMs);
+
   return (
     <div className="min-h-screen bg-arena-950 text-slate-100 pitch-cyber-grid">
       {/* HERO SECTION DE ALTO IMPACTO */}
-      <section className="relative overflow-hidden bg-arena-radial pt-8 pb-14 px-4 border-b border-arena-800/80">
+      <section className="relative overflow-hidden bg-arena-radial pt-8 pb-12 px-4 border-b border-arena-800/80">
         <div className="max-w-4xl mx-auto text-center relative z-10">
           {/* Badge de tipo de rodada */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pitch-green/10 border border-pitch-green/40 text-pitch-green text-xs font-black uppercase tracking-wider mb-4 animate-neon-pulse shadow-glow">
@@ -155,8 +170,8 @@ export default async function HomePage() {
 
           <p className="text-sm sm:text-base text-gray-300 max-w-2xl mx-auto mb-6 leading-relaxed">
             {activeTournament.entryFee === 0
-              ? `Sem custo de inscrição! Cadastre-se em segundos, crave seus palpites nos jogos decisivos de amanhã do Brasileirão e da Champions League e concorra a R$ ${activeTournament.prizePool.toFixed(2).replace(".", ",")} no Pix!`
-              : `Aposte no seu conhecimento de futebol, acompanhe seus pontos em tempo real e concorra ao prêmio de R$ ${activeTournament.prizePool.toFixed(2).replace(".", ",")} com pagamento instantâneo no Pix!`}
+              ? `Sem taxa de inscrição! Cadastre-se em segundos, crave seus palpites nos confrontos do Brasileirão e concorra a ${parsedPrizes.firstPlace} para o 1º Lugar e ${parsedPrizes.secondPlace} para o 2º Lugar via Pix!`
+              : `Mostre seu conhecimento de futebol, acompanhe seus pontos em tempo real e dispute ${parsedPrizes.firstPlace} para o 1º Lugar e ${parsedPrizes.secondPlace} para o 2º Lugar com pagamento instantâneo no Pix!`}
           </p>
 
           {/* BARRA DE PREENCHIMENTO DE VAGAS PROMOCIONAIS */}
@@ -175,44 +190,62 @@ export default async function HomePage() {
             </div>
           )}
 
-          {/* CARDS DE DESTAQUE: PRÊMIO, INSCRIÇÃO E CRONÔMETRO */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 max-w-3xl mx-auto mb-8">
-            {/* Prêmio */}
-            <div className="glass-card rounded-3xl p-5 relative overflow-hidden flex flex-col items-center justify-center border-gold-500/30 shadow-goldglow">
-              <div className="flex items-center gap-1.5 text-gold-400 text-xs font-black uppercase tracking-wider mb-1">
+          {/* CARDS DE DESTAQUE: 1º LUGAR, 2º LUGAR, ENCERRAMENTO E INSCRIÇÃO */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-4xl mx-auto mb-8">
+            {/* 1º Lugar */}
+            <div className="glass-card rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col items-center justify-center border-gold-500/40 shadow-goldglow">
+              <div className="flex items-center gap-1.5 text-gold-400 text-[11px] sm:text-xs font-black uppercase tracking-wider mb-1">
                 <Trophy className="w-4 h-4 text-gold-500" />
-                <span>Prêmio do 1º Lugar</span>
+                <span>1º Lugar</span>
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-white tracking-tight font-mono">
-                R$ {activeTournament.prizePool.toFixed(2).replace(".", ",")}
+              <div className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight font-mono">
+                {parsedPrizes.firstPlace}
               </div>
-              <span className="text-[11px] text-gold-400/90 font-semibold mt-0.5">Pagamento 100% no Pix</span>
+              <span className="text-[10px] sm:text-[11px] text-gold-400 font-semibold mt-0.5">
+                Transferência no Pix
+              </span>
             </div>
 
-            {/* Inscrição */}
-            <div className="glass-card rounded-3xl p-5 relative overflow-hidden flex flex-col items-center justify-center border-pitch-green/40 shadow-glow">
-              <div className="flex items-center gap-1.5 text-pitch-green text-xs font-black uppercase tracking-wider mb-1">
-                <Zap className="w-4 h-4 text-pitch-green" />
-                <span>Entrada no Bolão</span>
+            {/* 2º Lugar */}
+            <div className="glass-card rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col items-center justify-center border-gray-400/30 shadow-md">
+              <div className="flex items-center gap-1.5 text-gray-300 text-[11px] sm:text-xs font-black uppercase tracking-wider mb-1">
+                <Award className="w-4 h-4 text-gray-400" />
+                <span>2º Lugar</span>
               </div>
-              <div className="text-2xl sm:text-3xl font-black text-pitch-green tracking-tight font-mono">
+              <div className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight font-mono">
+                {parsedPrizes.secondPlace}
+              </div>
+              <span className="text-[10px] sm:text-[11px] text-gray-400 font-semibold mt-0.5">
+                Transferência no Pix
+              </span>
+            </div>
+
+            {/* Fechamento Rigoroso */}
+            <div className="glass-card rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col items-center justify-center border-arena-700">
+              <div className="flex items-center gap-1.5 text-gray-300 text-[11px] sm:text-xs font-black uppercase tracking-wider mb-1">
+                <Clock className="w-4 h-4 text-pitch-green" />
+                <span>Fechamento</span>
+              </div>
+              <CountdownTimer targetDate={effectiveDeadline} />
+              <span className="text-[10px] text-gray-400 mt-1 font-medium">
+                5 min antes do 1º jogo
+              </span>
+            </div>
+
+            {/* Entrada */}
+            <div className="glass-card rounded-2xl p-4 sm:p-5 relative overflow-hidden flex flex-col items-center justify-center border-pitch-green/40 shadow-glow">
+              <div className="flex items-center gap-1.5 text-pitch-green text-[11px] sm:text-xs font-black uppercase tracking-wider mb-1">
+                <Zap className="w-4 h-4 text-pitch-green" />
+                <span>Inscrição</span>
+              </div>
+              <div className="text-xl sm:text-2xl md:text-3xl font-black text-pitch-green tracking-tight font-mono">
                 {activeTournament.entryFee === 0
                   ? "GRÁTIS"
                   : `R$ ${activeTournament.entryFee.toFixed(2).replace(".", ",")}`}
               </div>
-              <span className="text-[11px] text-gray-300 font-medium mt-0.5">
+              <span className="text-[10px] sm:text-[11px] text-gray-300 font-medium mt-0.5">
                 {activeTournament.entryFee === 0 ? "Sem taxa de inscrição" : "Liberação Automática"}
               </span>
-            </div>
-
-            {/* Tempo Restante */}
-            <div className="glass-card rounded-3xl p-5 relative overflow-hidden flex flex-col items-center justify-center">
-              <div className="flex items-center gap-1.5 text-gray-400 text-xs font-black uppercase tracking-wider mb-1">
-                <Clock className="w-4 h-4 text-gray-300" />
-                <span>Encerramento</span>
-              </div>
-              <CountdownTimer targetDate={activeTournament.deadlinePredictions} />
-              <span className="text-[10px] text-gray-400 mt-1 font-medium">Até antes da 1ª partida</span>
             </div>
           </div>
 
@@ -233,6 +266,77 @@ export default async function HomePage() {
               <Trophy className="w-4 h-4 text-gold-500" />
               <span>Ver Classificação</span>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* QUADRO OFICIAL DE PREMIAÇÃO VIA PIX */}
+      <section className="max-w-4xl mx-auto px-4 py-8">
+        <div className="bg-arena-900/90 border-2 border-gold-500/30 rounded-3xl p-5 sm:p-7 shadow-goldglow">
+          <div className="text-center mb-5">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-500/10 text-gold-400 text-xs font-black uppercase tracking-wider mb-1.5 border border-gold-500/20">
+              <Trophy className="w-4 h-4 text-gold-500" />
+              <span>Premiação Oficial Desta Rodada</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              Prêmios Transferidos Direto na Chave Pix
+            </h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Apuração automatizada conforme os jogos forem encerrando
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {/* 1º Lugar */}
+            <div className="bg-arena-850/90 border-2 border-gold-500/50 rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-goldglow">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-gold-600 to-gold-400 text-arena-950 flex items-center justify-center font-black text-2xl shadow-lg shrink-0">
+                  🥇
+                </div>
+                <div>
+                  <span className="text-xs font-black uppercase tracking-wider text-gold-400 block">
+                    1º Lugar • Campeão
+                  </span>
+                  <span className="text-2xl sm:text-3xl font-black font-mono text-white">
+                    {parsedPrizes.firstPlace}
+                  </span>
+                </div>
+              </div>
+              <span className="text-xs font-bold text-gold-400 bg-gold-500/10 px-2.5 py-1 rounded-lg border border-gold-500/20">
+                Pix Imediato
+              </span>
+            </div>
+
+            {/* 2º Lugar */}
+            <div className="bg-arena-850/90 border border-gray-400/30 rounded-2xl p-4 sm:p-5 flex items-center justify-between">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-gray-400 to-gray-200 text-arena-950 flex items-center justify-center font-black text-2xl shadow-md shrink-0">
+                  🥈
+                </div>
+                <div>
+                  <span className="text-xs font-black uppercase tracking-wider text-gray-300 block">
+                    2º Lugar • Vice-Campeão
+                  </span>
+                  <span className="text-2xl sm:text-3xl font-black font-mono text-white">
+                    {parsedPrizes.secondPlace}
+                  </span>
+                </div>
+              </div>
+              <span className="text-xs font-bold text-gray-300 bg-gray-400/10 px-2.5 py-1 rounded-lg border border-gray-400/20">
+                Pix Imediato
+              </span>
+            </div>
+          </div>
+
+          {/* Regra de transparência e prazo */}
+          <div className="mt-4 pt-3.5 border-t border-arena-800 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-400">
+            <span className="flex items-center gap-1.5 text-gray-300">
+              <Clock className="w-4 h-4 text-pitch-green shrink-0" />
+              <span><strong>Fechamento dos palpites:</strong> exatamente 5 minutos antes do 1º jogo (às 19:25).</span>
+            </span>
+            <span className="text-pitch-green font-bold">
+              ✓ Apuração e ranking 100% transparentes
+            </span>
           </div>
         </div>
       </section>
@@ -353,7 +457,7 @@ export default async function HomePage() {
             </div>
             <h3 className="text-base font-bold text-white mb-1.5">Crave seus Palpites</h3>
             <p className="text-xs text-gray-400 leading-relaxed">
-              Preencha os placares das partidas de amanhã antes das 16:59. Ao clicar em confirmar, seus palpites ficam travados e registrados com segurança.
+              Preencha os placares das partidas até 5 minutos antes do início do primeiro jogo (às 19:25). Ao clicar em confirmar, seus palpites ficam travados e registrados com segurança para a apuração oficial.
             </p>
           </div>
 

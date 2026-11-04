@@ -70,8 +70,58 @@ export async function POST(req: NextRequest) {
       name: user.name,
     });
 
+    // Vincula automaticamente o novo usuário como participante do bolão ativo
+    try {
+      const activeTournament = await prisma.tournament.findFirst({
+        where: { isActive: true },
+      });
+
+      if (activeTournament) {
+        const isFree = activeTournament.entryFee === 0;
+        const participant = await prisma.participant.upsert({
+          where: {
+            userId_tournamentId: {
+              userId: user.id,
+              tournamentId: activeTournament.id,
+            },
+          },
+          update: {
+            paymentStatus: isFree ? "PAID" : "PENDING",
+          },
+          create: {
+            userId: user.id,
+            tournamentId: activeTournament.id,
+            paymentStatus: isFree ? "PAID" : "PENDING",
+            paidAt: isFree ? new Date() : null,
+            totalPoints: 0,
+            exactScoresCount: 0,
+            winnerPicksCount: 0,
+            rankPosition: 1,
+          },
+        });
+
+        if (isFree) {
+          await prisma.payment.create({
+            data: {
+              userId: user.id,
+              tournamentId: activeTournament.id,
+              participantId: participant.id,
+              provider: "FREE_PROMO",
+              providerPaymentId: `FREE_REG_${user.id}_${Date.now()}`,
+              status: "PAID",
+              amount: 0.0,
+              paidAt: new Date(),
+            },
+          }).catch(() => {});
+        }
+      }
+    } catch (partErr) {
+      console.warn("Aviso ao vincular participante inicial:", partErr);
+    }
+
     const response = NextResponse.json({
       success: true,
+      token,
       user: {
         id: user.id,
         name: user.name,

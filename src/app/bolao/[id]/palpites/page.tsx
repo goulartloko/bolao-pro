@@ -55,8 +55,14 @@ export default function PalpitesPage() {
     setErrorMessage(null);
 
     try {
+      const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
+      const authHeaders: Record<string, string> = localToken ? { Authorization: `Bearer ${localToken}` } : {};
+
       // 1. Verifica autenticação e status Pix
-      const meRes = await fetch("/api/auth/me");
+      const meRes = await fetch(`/api/auth/me?_t=${Date.now()}`, {
+        headers: authHeaders,
+        cache: "no-store",
+      });
       const meData = await meRes.json();
 
       if (!meData.authenticated) {
@@ -65,10 +71,13 @@ export default function PalpitesPage() {
         return;
       }
 
-      setIsPaid(meData.participantStatus === "PAID");
+      setIsPaid(meData.participantStatus === "PAID" || tournament?.entryFee === 0);
 
       // 2. Busca palpites já existentes
-      const predRes = await fetch(`/api/predictions?tournamentId=${tournamentId}`);
+      const predRes = await fetch(`/api/predictions?tournamentId=${tournamentId}&_t=${Date.now()}`, {
+        headers: authHeaders,
+        cache: "no-store",
+      });
       if (predRes.ok) {
         const predData = await predRes.json();
         const predMap: Record<string, { home: number; away: number }> = {};
@@ -90,12 +99,17 @@ export default function PalpitesPage() {
       }
 
       // 3. Busca partidas da rodada
-      const bolaoRes = await fetch(`/api/bolao/active`);
+      const bolaoRes = await fetch(`/api/bolao/active?_t=${Date.now()}`, {
+        cache: "no-store",
+      });
       if (bolaoRes.ok) {
         const bData = await bolaoRes.json();
         if (bData.tournament) {
           setTournament(bData.tournament);
           setMatches(bData.tournament.matches || []);
+          if (bData.tournament.entryFee === 0) {
+            setIsPaid(true);
+          }
         }
       }
     } catch (err: any) {
@@ -161,9 +175,14 @@ export default function PalpitesPage() {
         awayScore: scores.away,
       }));
 
+      const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
+
       const res = await fetch("/api/predictions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(localToken ? { Authorization: `Bearer ${localToken}` } : {}),
+        },
         body: JSON.stringify({
           tournamentId,
           predictions: payload,
@@ -270,6 +289,20 @@ export default function PalpitesPage() {
 
   const now = new Date();
 
+  // Cálculo rigoroso do prazo: 5 minutos antes do 1º jogo da rodada
+  const matchTimes = matches.map((m: any) => new Date(m.matchDate).getTime());
+  const earliestMatchTime = matchTimes.length > 0 ? Math.min(...matchTimes) : null;
+  const fiveMinBeforeFirst = earliestMatchTime ? earliestMatchTime - 5 * 60 * 1000 : null;
+
+  let effectiveDeadlineMs = tournament?.deadlinePredictions
+    ? new Date(tournament.deadlinePredictions).getTime()
+    : 0;
+  if (fiveMinBeforeFirst && (effectiveDeadlineMs === 0 || fiveMinBeforeFirst < effectiveDeadlineMs)) {
+    effectiveDeadlineMs = fiveMinBeforeFirst;
+  }
+
+  const isDeadlinePassed = effectiveDeadlineMs > 0 && now.getTime() >= effectiveDeadlineMs;
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
       {/* CABEÇALHO */}
@@ -283,11 +316,13 @@ export default function PalpitesPage() {
           <p className="text-xs text-gray-400">
             {isLocked
               ? "Seus palpites estão confirmados e travados para a apuração oficial."
+              : isDeadlinePassed
+              ? "O prazo para envio de palpites encerrou 5 minutos antes do primeiro jogo."
               : "Preencha seus palpites e clique em Salvar para travar suas escolhas."}
           </p>
         </div>
 
-        {isLocked ? (
+        {isLocked || isDeadlinePassed ? (
           <div className="flex items-center gap-2">
             <Link
               href={`/bolao/${tournamentId}/ranking`}
@@ -321,6 +356,23 @@ export default function PalpitesPage() {
           </button>
         )}
       </div>
+
+      {/* BANNER DE PRAZO ENCERRADO (5 MIN ANTES DO 1º JOGO) */}
+      {isDeadlinePassed && !isLocked && (
+        <div className="mb-6 p-4 bg-arena-900 border-2 border-red-500/40 rounded-2xl text-xs sm:text-sm shadow-glow flex items-start gap-3">
+          <div className="p-2 rounded-xl bg-red-500/10 text-red-400 shrink-0 mt-0.5 border border-red-500/30">
+            <Lock className="w-5 h-5 text-red-400" />
+          </div>
+          <div>
+            <h3 className="font-extrabold text-white text-sm sm:text-base flex items-center gap-1.5">
+              <span>Palpites Desta Rodada Encerrados</span>
+            </h3>
+            <p className="text-gray-300 text-xs mt-1 leading-relaxed">
+              Conforme as regras oficiais, o envio de palpites foi encerrado 5 minutos antes do início do primeiro jogo para garantir a transparência da apuração. Acompanhe a pontuação ao vivo no Ranking!
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* BANNER DE TRAVAMENTO DEFINITIVO */}
       {isLocked && (
@@ -356,7 +408,8 @@ export default function PalpitesPage() {
       {/* LISTA DE JOGOS E INPUTS DE PALPITES */}
       <div className="space-y-4">
         {matches.map((match) => {
-          const isMatchLocked = isLocked || now >= new Date(match.matchDate) || match.status !== "SCHEDULED";
+          const matchDeadline = new Date(match.matchDate).getTime() - 5 * 60 * 1000;
+          const isMatchLocked = isLocked || isDeadlinePassed || now.getTime() >= matchDeadline || match.status !== "SCHEDULED";
           const currentScore = predictions[match.id] || { home: 0, away: 0 };
           const detail = existingPredictions[match.id];
 

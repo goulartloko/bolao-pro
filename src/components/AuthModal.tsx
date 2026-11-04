@@ -101,8 +101,20 @@ export default function AuthModal({
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs sm:text-sm text-center">
-            {error}
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs sm:text-sm text-center space-y-2">
+            <div>{error}</div>
+            {error.includes("Já existe") && mode === "register" && (
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setMode("login");
+                }}
+                className="inline-block py-1.5 px-3 bg-pitch-green text-arena-950 font-bold rounded-lg text-xs hover:bg-pitch-light transition shadow-glow"
+              >
+                Fazer login agora com este e-mail
+              </button>
+            )}
           </div>
         )}
 
