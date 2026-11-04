@@ -17,6 +17,7 @@ import {
   Sparkles,
   Users,
   Target,
+  Play,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -267,6 +268,40 @@ export default async function HomePage() {
               <Trophy className="w-4 h-4 text-gold-500" />
               <span>Ver Classificação</span>
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* VÍDEO TUTORIAL OFICIAL COM LOCUÇÃO - EM TELA CHEIA */}
+      <section className="max-w-4xl mx-auto px-4 pt-6 pb-2 text-center">
+        <div className="bg-arena-900 border border-gold-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+          <div className="max-w-2xl mx-auto space-y-3 mb-6">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pitch-green/10 text-pitch-green text-xs font-black uppercase tracking-wider border border-pitch-green/20">
+              <Play className="w-3.5 h-3.5 fill-pitch-green" />
+              <span>Vídeo Oficial com Voz Passo a Passo</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Como Funciona o Bolão dos Cria?
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-300 leading-relaxed max-w-xl mx-auto">
+              Assista ao vídeo explicativo de 1 minuto ensinando o passo a passo completo: como se cadastrar grátis em menos de 1 minuto, como palpitar nos jogos e a regra do prazo de encerramento!
+            </p>
+            <div className="pt-1 flex flex-wrap items-center justify-center gap-2 text-xs font-bold text-gray-400">
+              <span className="bg-arena-850 px-3 py-1.5 rounded-xl border border-arena-750 text-white">⚽ Por rodada do Brasileirão</span>
+              <span className="bg-arena-850 px-3 py-1.5 rounded-xl border border-arena-750 text-pitch-green">🔒 Fecha antes do 1º jogo</span>
+              <span className="bg-arena-850 px-3 py-1.5 rounded-xl border border-arena-750 text-gold-400">💸 Premiação no Pix</span>
+            </div>
+          </div>
+
+          {/* PLAYER PREENCHIDO EM TELA CHEIA MOBILE */}
+          <div className="w-full max-w-[360px] sm:max-w-[420px] mx-auto rounded-3xl overflow-hidden border-2 border-gold-500/50 bg-black aspect-[9/16] shadow-2xl shadow-gold-500/10">
+            <video
+              src="/video_tutorial_bolao.mp4"
+              controls
+              playsInline
+              preload="metadata"
+              className="w-full h-full object-cover"
+            />
           </div>
         </div>
       </section>

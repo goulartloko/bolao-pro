@@ -42,8 +42,9 @@ def assemble():
     # 3. Add stylish subtle header banner / caption bar or keep pure full-screen mobile
     # 4. Sync audio and video, cut at audio duration
     
+    # Crop exactly to the real mobile screen content (430x932) and scale to full-frame 1080x1920
     filter_complex = (
-        "[0:v]scale=-2:1920,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=#0a0e17[v]"
+        "[0:v]crop=430:932:0:0,scale=1080:1920:flags=lanczos[v]"
     )
 
     cmd = [
