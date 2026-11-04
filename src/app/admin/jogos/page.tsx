@@ -230,28 +230,37 @@ export default function AdminJogosPage() {
 
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => handleAutoSync("QUARTA_BRASILEIRAO_CHAMPIONS")}
+            onClick={() => handleAutoSync("BRASILEIRAO_R34")}
             disabled={syncing}
             className="py-2.5 px-3.5 bg-pitch-green hover:bg-pitch-light text-arena-950 font-extrabold rounded-xl text-xs transition shadow-glow flex items-center justify-center gap-1.5 disabled:opacity-50"
-            title="Sincronizar jogos reais de amanhã do Brasileirão e Champions League"
+            title="Sincronizar os 10 confrontos oficiais da 34ª Rodada do Brasileirão Série A"
           >
             {syncing ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <>
                 <Zap className="w-4 h-4 text-arena-950" />
-                <span>⚡ Auto-Sincronizar Brasileirão & Champions</span>
+                <span>🇧🇷 Brasileirão - Rodada 34</span>
               </>
             )}
           </button>
 
           <button
-            onClick={() => handleAutoSync("LA_LIGA_R12")}
+            onClick={() => handleAutoSync("BRASILEIRAO_R35")}
+            disabled={syncing}
+            className="py-2.5 px-3.5 bg-arena-850 hover:bg-arena-800 text-white font-bold rounded-xl text-xs border border-arena-700 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+            title="Sincronizar os 10 confrontos da 35ª Rodada do Brasileirão Série A"
+          >
+            <span>🇧🇷 Brasileirão - Rodada 35</span>
+          </button>
+
+          <button
+            onClick={() => handleAutoSync("CHAMPIONS_LEAGUE")}
             disabled={syncing}
             className="py-2.5 px-3.5 bg-arena-800 hover:bg-arena-750 text-gold-400 font-bold rounded-xl text-xs border border-gold-500/30 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
-            title="Sincronizar jogos da La Liga Espanhola"
+            title="Sincronizar os jogos oficiais da UEFA Champions League"
           >
-            <span>🇪🇸 Auto-Sincronizar La Liga</span>
+            <span>⭐️ Champions League</span>
           </button>
 
           <button

@@ -6,136 +6,220 @@ import { revalidatePath } from "next/cache";
 export const dynamic = "force-dynamic";
 
 const MATCH_FEEDS = {
-  "QUARTA_BRASILEIRAO_CHAMPIONS": {
-    name: "Super Rodada 10 Jogos (Brasileirão Série A + Champions League)",
-    title: "Super Rodada dos Campeões - Brasileirão & Champions League (10 Jogos)",
-    deadline: "2026-11-04T16:59:00-03:00",
+  "BRASILEIRAO_R34": {
+    name: "Brasileirão Série A - 34ª Rodada Oficial",
+    title: "Brasileirão Série A - 34ª Rodada Oficial (10 Jogos)",
+    deadline: "2026-11-04T18:59:00-03:00",
     matches: [
-      {
-        homeTeam: "Slavia Praga",
-        awayTeam: "Arsenal",
-        stadium: "Eden Arena, Praga (Champions League)",
-        matchDate: "2026-11-04T17:00:00-03:00",
-        roundNumber: 4,
-      },
-      {
-        homeTeam: "Borussia Dortmund",
-        awayTeam: "Real Betis",
-        stadium: "Signal Iduna Park, Dortmund (Champions League)",
-        matchDate: "2026-11-04T17:00:00-03:00",
-        roundNumber: 4,
-      },
-      {
-        homeTeam: "Inter de Milão",
-        awayTeam: "Bayern de Munique",
-        stadium: "San Siro, Milão (Champions League)",
-        matchDate: "2026-11-04T17:00:00-03:00",
-        roundNumber: 4,
-      },
-      {
-        homeTeam: "Paris Saint-Germain",
-        awayTeam: "Atlético de Madrid",
-        stadium: "Parc des Princes, Paris (Champions League)",
-        matchDate: "2026-11-04T17:00:00-03:00",
-        roundNumber: 4,
-      },
       {
         homeTeam: "Flamengo",
         awayTeam: "Grêmio",
-        stadium: "Estádio do Maracanã, Rio de Janeiro (Brasileirão Série A)",
+        stadium: "Estádio do Maracanã, Rio de Janeiro (RJ)",
         matchDate: "2026-11-04T19:30:00-03:00",
         roundNumber: 34,
       },
       {
         homeTeam: "Athletico-PR",
         awayTeam: "Vasco",
-        stadium: "Ligga Arena, Curitiba (Brasileirão Série A)",
+        stadium: "Ligga Arena, Curitiba (PR)",
         matchDate: "2026-11-04T19:30:00-03:00",
-        roundNumber: 34,
-      },
-      {
-        homeTeam: "Cruzeiro",
-        awayTeam: "Fluminense",
-        stadium: "Estádio Mineirão, Belo Horizonte (Brasileirão Série A)",
-        matchDate: "2026-11-04T20:00:00-03:00",
-        roundNumber: 34,
-      },
-      {
-        homeTeam: "Palmeiras",
-        awayTeam: "Internacional",
-        stadium: "Allianz Parque, São Paulo (Brasileirão Série A)",
-        matchDate: "2026-11-04T21:30:00-03:00",
         roundNumber: 34,
       },
       {
         homeTeam: "Botafogo",
         awayTeam: "Atlético-MG",
-        stadium: "Estádio Nilton Santos, Rio de Janeiro (Brasileirão Série A)",
+        stadium: "Estádio Nilton Santos, Rio de Janeiro (RJ)",
         matchDate: "2026-11-04T21:30:00-03:00",
         roundNumber: 34,
       },
       {
         homeTeam: "São Paulo",
         awayTeam: "Corinthians",
-        stadium: "MorumBIS, São Paulo (Clássico Majestoso - Brasileirão)",
+        stadium: "MorumBIS, São Paulo (SP)",
         matchDate: "2026-11-04T21:30:00-03:00",
+        roundNumber: 34,
+      },
+      {
+        homeTeam: "Cruzeiro",
+        awayTeam: "Bahia",
+        stadium: "Estádio Mineirão, Belo Horizonte (MG)",
+        matchDate: "2026-11-04T21:30:00-03:00",
+        roundNumber: 34,
+      },
+      {
+        homeTeam: "Palmeiras",
+        awayTeam: "Internacional",
+        stadium: "Allianz Parque, São Paulo (SP)",
+        matchDate: "2026-11-04T19:30:00-03:00",
+        roundNumber: 34,
+      },
+      {
+        homeTeam: "Vitória",
+        awayTeam: "Fluminense",
+        stadium: "Estádio Barradão, Salvador (BA)",
+        matchDate: "2026-11-04T20:00:00-03:00",
+        roundNumber: 34,
+      },
+      {
+        homeTeam: "Red Bull Bragantino",
+        awayTeam: "Santos",
+        stadium: "Estádio Nabi Abi Chedid, Bragança Paulista (SP)",
+        matchDate: "2026-11-04T19:00:00-03:00",
+        roundNumber: 34,
+      },
+      {
+        homeTeam: "Fortaleza",
+        awayTeam: "Juventude",
+        stadium: "Arena Castelão, Fortaleza (CE)",
+        matchDate: "2026-11-04T19:00:00-03:00",
+        roundNumber: 34,
+      },
+      {
+        homeTeam: "Criciúma",
+        awayTeam: "Cuiabá",
+        stadium: "Estádio Heriberto Hülse, Criciúma (SC)",
+        matchDate: "2026-11-04T20:00:00-03:00",
         roundNumber: 34,
       },
     ],
   },
-  "LA_LIGA_R12": {
-    name: "La Liga Espanhola - Rodada 12 (Fim de Semana)",
-    title: "La Liga 2026/27 - Rodada 12 Oficial",
-    deadline: "2026-11-06T16:59:00-03:00",
+  "BRASILEIRAO_R35": {
+    name: "Brasileirão Série A - 35ª Rodada Oficial",
+    title: "Brasileirão Série A - 35ª Rodada Oficial (10 Jogos)",
+    deadline: "2026-11-07T15:59:00-03:00",
     matches: [
       {
-        homeTeam: "Sevilla",
-        awayTeam: "Deportivo Alavés",
-        stadium: "Ramón Sánchez-Pizjuán, Sevilha",
-        matchDate: "2026-11-06T17:00:00-03:00",
-        roundNumber: 12,
+        homeTeam: "Corinthians",
+        awayTeam: "Vasco",
+        stadium: "Neo Química Arena, São Paulo (SP)",
+        matchDate: "2026-11-07T16:00:00-03:00",
+        roundNumber: 35,
       },
       {
-        homeTeam: "Osasuna",
-        awayTeam: "Athletic Club",
-        stadium: "Estádio El Sadar, Pamplona",
-        matchDate: "2026-11-07T14:30:00-03:00",
-        roundNumber: 12,
+        homeTeam: "Grêmio",
+        awayTeam: "Palmeiras",
+        stadium: "Arena do Grêmio, Porto Alegre (RS)",
+        matchDate: "2026-11-07T16:00:00-03:00",
+        roundNumber: 35,
       },
       {
-        homeTeam: "Valencia",
-        awayTeam: "Real Madrid",
-        stadium: "Estádio de Mestalla, Valência",
-        matchDate: "2026-11-07T17:00:00-03:00",
-        roundNumber: 12,
+        homeTeam: "Fluminense",
+        awayTeam: "Flamengo",
+        stadium: "Estádio do Maracanã, Rio de Janeiro (RJ)",
+        matchDate: "2026-11-07T18:30:00-03:00",
+        roundNumber: 35,
       },
       {
-        homeTeam: "Elche",
-        awayTeam: "Real Betis",
-        stadium: "Estádio Manuel Martínez Valero, Elche",
-        matchDate: "2026-11-08T10:00:00-03:00",
-        roundNumber: 12,
+        homeTeam: "Atlético-MG",
+        awayTeam: "São Paulo",
+        stadium: "Arena MRV, Belo Horizonte (MG)",
+        matchDate: "2026-11-07T18:30:00-03:00",
+        roundNumber: 35,
       },
       {
-        homeTeam: "Real Sociedad",
-        awayTeam: "Rayo Vallecano",
-        stadium: "Reale Arena, San Sebastián",
-        matchDate: "2026-11-08T12:15:00-03:00",
-        roundNumber: 12,
+        homeTeam: "Internacional",
+        awayTeam: "Botafogo",
+        stadium: "Estádio Beira-Rio, Porto Alegre (RS)",
+        matchDate: "2026-11-07T21:00:00-03:00",
+        roundNumber: 35,
       },
       {
-        homeTeam: "Villarreal",
-        awayTeam: "Getafe",
-        stadium: "Estadio de la Cerámica, Villarreal",
-        matchDate: "2026-11-08T14:30:00-03:00",
-        roundNumber: 12,
+        homeTeam: "Bahia",
+        awayTeam: "Athletico-PR",
+        stadium: "Arena Fonte Nova, Salvador (BA)",
+        matchDate: "2026-11-08T16:00:00-03:00",
+        roundNumber: 35,
       },
       {
-        homeTeam: "Atlético de Madrid",
+        homeTeam: "Cruzeiro",
+        awayTeam: "Fortaleza",
+        stadium: "Estádio Mineirão, Belo Horizonte (MG)",
+        matchDate: "2026-11-08T16:00:00-03:00",
+        roundNumber: 35,
+      },
+      {
+        homeTeam: "Santos",
+        awayTeam: "Cuiabá",
+        stadium: "Vila Belmiro, Santos (SP)",
+        matchDate: "2026-11-08T18:30:00-03:00",
+        roundNumber: 35,
+      },
+      {
+        homeTeam: "Juventude",
+        awayTeam: "Criciúma",
+        stadium: "Estádio Alfredo Jaconi, Caxias do Sul (RS)",
+        matchDate: "2026-11-08T18:30:00-03:00",
+        roundNumber: 35,
+      },
+      {
+        homeTeam: "Vitória",
+        awayTeam: "Red Bull Bragantino",
+        stadium: "Estádio Barradão, Salvador (BA)",
+        matchDate: "2026-11-08T18:30:00-03:00",
+        roundNumber: 35,
+      },
+    ],
+  },
+  "CHAMPIONS_LEAGUE": {
+    name: "UEFA Champions League - Rodada Oficial",
+    title: "UEFA Champions League - Rodada Oficial dos Gigantes",
+    deadline: "2026-11-04T16:59:00-03:00",
+    matches: [
+      {
+        homeTeam: "Real Madrid",
+        awayTeam: "Milan",
+        stadium: "Santiago Bernabéu, Madri",
+        matchDate: "2026-11-04T17:00:00-03:00",
+        roundNumber: 4,
+      },
+      {
+        homeTeam: "Liverpool",
+        awayTeam: "Bayer Leverkusen",
+        stadium: "Anfield, Liverpool",
+        matchDate: "2026-11-04T17:00:00-03:00",
+        roundNumber: 4,
+      },
+      {
+        homeTeam: "Paris Saint-Germain",
+        awayTeam: "Atlético de Madrid",
+        stadium: "Parc des Princes, Paris",
+        matchDate: "2026-11-04T17:00:00-03:00",
+        roundNumber: 4,
+      },
+      {
+        homeTeam: "Inter de Milão",
+        awayTeam: "Arsenal",
+        stadium: "San Siro, Milão",
+        matchDate: "2026-11-04T17:00:00-03:00",
+        roundNumber: 4,
+      },
+      {
+        homeTeam: "Sporting",
+        awayTeam: "Manchester City",
+        stadium: "Estádio José Alvalade, Lisboa",
+        matchDate: "2026-11-04T17:00:00-03:00",
+        roundNumber: 4,
+      },
+      {
+        homeTeam: "Bayern de Munique",
+        awayTeam: "Benfica",
+        stadium: "Allianz Arena, Munique",
+        matchDate: "2026-11-04T17:00:00-03:00",
+        roundNumber: 4,
+      },
+      {
+        homeTeam: "Estrela Vermelha",
         awayTeam: "Barcelona",
-        stadium: "Estádio Cívitas Metropolitano, Madri",
-        matchDate: "2026-11-08T17:00:00-03:00",
-        roundNumber: 12,
+        stadium: "Estádio Rajko Mitić, Belgrado",
+        matchDate: "2026-11-04T17:00:00-03:00",
+        roundNumber: 4,
+      },
+      {
+        homeTeam: "Borussia Dortmund",
+        awayTeam: "Sturm Graz",
+        stadium: "Signal Iduna Park, Dortmund",
+        matchDate: "2026-11-04T17:00:00-03:00",
+        roundNumber: 4,
       },
     ],
   },
@@ -149,7 +233,7 @@ export async function POST(req: NextRequest) {
 
     const { feedKey, replaceExisting } = await req.json();
 
-    const feed = MATCH_FEEDS[feedKey as keyof typeof MATCH_FEEDS] || MATCH_FEEDS["QUARTA_BRASILEIRAO_CHAMPIONS"];
+    const feed = MATCH_FEEDS[feedKey as keyof typeof MATCH_FEEDS] || MATCH_FEEDS["BRASILEIRAO_R34"];
 
     // Busca o bolão ativo
     const tournament = await prisma.tournament.findFirst({
@@ -162,7 +246,6 @@ export async function POST(req: NextRequest) {
 
     // Se solicitado para substituir jogos antigos
     if (replaceExisting) {
-      // Deleta primeiro os palpites associados a partidas deste torneio
       await prisma.prediction.deleteMany({
         where: { match: { tournamentId: tournament.id } },
       });
@@ -201,12 +284,12 @@ export async function POST(req: NextRequest) {
       revalidatePath("/bolao/[id]/palpites", "page");
       revalidatePath("/bolao/[id]/ranking", "page");
     } catch {
-      // Ignora erro fora de contexto de rota
+      // Ignora erro fora de contexto
     }
 
     return NextResponse.json({
       success: true,
-      message: `${created.length} partidas sincronizadas com sucesso! A rodada agora possui ${created.length} jogos para evitar empates.`,
+      message: `${created.length} partidas da rodada sincronizadas com sucesso!`,
       feedName: feed.name,
       count: created.length,
     });
