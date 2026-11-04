@@ -51,6 +51,32 @@ export default function AdminJogosPage() {
     };
   }
 
+  async function handleSyncApiFutebol(rodada: number = 34) {
+    if (
+      !confirm(
+        `Deseja sincronizar as partidas da ${rodada}ª Rodada do Brasileirão via API Futebol Oficial (trazendo somente jogos não iniciados)?`
+      )
+    )
+      return;
+    setSyncing(true);
+    setStatusMessage(null);
+    try {
+      const res = await fetch("/api/admin/matches/api-futebol", {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ campeonatoId: 10, rodada, onlyUpcoming: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setStatusMessage({ text: data.message, type: "success" });
+      loadData();
+    } catch (err: any) {
+      setStatusMessage({ text: err.message, type: "error" });
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   async function handleAutoSync(feedKey: string) {
     if (!confirm("Deseja sincronizar e substituir as partidas por este pacote oficial de 10 jogos automaticamente?")) return;
     setSyncing(true);
@@ -230,37 +256,28 @@ export default function AdminJogosPage() {
 
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => handleAutoSync("BRASILEIRAO_R34")}
+            onClick={() => handleSyncApiFutebol(34)}
             disabled={syncing}
             className="py-2.5 px-3.5 bg-pitch-green hover:bg-pitch-light text-arena-950 font-extrabold rounded-xl text-xs transition shadow-glow flex items-center justify-center gap-1.5 disabled:opacity-50"
-            title="Sincronizar os 10 confrontos oficiais da 34ª Rodada do Brasileirão Série A"
+            title="Puxar partidas da 34ª Rodada da API Futebol trazendo apenas jogos não iniciados"
           >
             {syncing ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <>
                 <Zap className="w-4 h-4 text-arena-950" />
-                <span>🇧🇷 Brasileirão - Rodada 34</span>
+                <span>⚡ API Futebol: Rodada 34 (Jogos Não Iniciados)</span>
               </>
             )}
           </button>
 
           <button
-            onClick={() => handleAutoSync("BRASILEIRAO_R35")}
+            onClick={() => handleSyncApiFutebol(35)}
             disabled={syncing}
-            className="py-2.5 px-3.5 bg-arena-850 hover:bg-arena-800 text-white font-bold rounded-xl text-xs border border-arena-700 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
-            title="Sincronizar os 10 confrontos da 35ª Rodada do Brasileirão Série A"
+            className="py-2.5 px-3.5 bg-gold-500 hover:bg-gold-400 text-arena-950 font-extrabold rounded-xl text-xs transition shadow-goldglow flex items-center justify-center gap-1.5 disabled:opacity-50"
+            title="Puxar os 10 confrontos da próxima 35ª Rodada da Série A via API Futebol"
           >
-            <span>🇧🇷 Brasileirão - Rodada 35</span>
-          </button>
-
-          <button
-            onClick={() => handleAutoSync("CHAMPIONS_LEAGUE")}
-            disabled={syncing}
-            className="py-2.5 px-3.5 bg-arena-800 hover:bg-arena-750 text-gold-400 font-bold rounded-xl text-xs border border-gold-500/30 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
-            title="Sincronizar os jogos oficiais da UEFA Champions League"
-          >
-            <span>⭐️ Champions League</span>
+            <span>⚡ API Futebol: Rodada 35</span>
           </button>
 
           <button
