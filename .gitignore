@@ -31,3 +31,7 @@ next-env.d.ts
 # SQLite local DB
 prisma/dev.db
 prisma/dev.db-journal
+
+# Media / Audio raw
+*.wav
+scripts/concat.txt
