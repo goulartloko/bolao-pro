@@ -30,7 +30,11 @@ export default function Navbar() {
 
   async function checkUser() {
     try {
-      const res = await fetch("/api/auth/me");
+      const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
+      const res = await fetch(`/api/auth/me?_t=${Date.now()}`, {
+        headers: localToken ? { Authorization: `Bearer ${localToken}` } : {},
+        cache: "no-store",
+      });
       const data = await res.json();
       if (data.authenticated && data.user) {
         setUser(data.user);
@@ -49,6 +53,9 @@ export default function Navbar() {
   }, [pathname]);
 
   async function handleLogout() {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("bolao_admin_token");
+    }
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
     window.location.href = "/";

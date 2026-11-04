@@ -59,6 +59,10 @@ export default function AuthModal({
         throw new Error(data.error || "Ocorreu um erro. Verifique seus dados.");
       }
 
+      if (data.token && typeof window !== "undefined") {
+        localStorage.setItem("bolao_admin_token", data.token);
+      }
+
       onSuccess();
       onClose();
     } catch (err: any) {

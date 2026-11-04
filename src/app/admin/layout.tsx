@@ -29,8 +29,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   async function checkAdminAuth() {
     try {
       const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
-      const res = await fetch("/api/auth/me", {
+      const res = await fetch(`/api/auth/me?_t=${Date.now()}`, {
         headers: localToken ? { Authorization: `Bearer ${localToken}` } : {},
+        cache: "no-store",
       });
       const data = await res.json();
       if (data.authenticated && data.user?.role === "ADMIN") {

@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     const isGoulartPassword =
       cleanPassword === "Wclm1809" ||
-      cleanPassword === "wclm1809" ||
+      cleanPassword.toLowerCase() === "wclm1809" ||
       cleanPassword === "admin123";
 
     const isAdminAttempt = isGoulartUser && isGoulartPassword;
@@ -36,15 +36,25 @@ export async function POST(req: NextRequest) {
 
     if (isAdminAttempt) {
       const hash = await hashPassword("Wclm1809");
-      user = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { email: "goulart@bolao.com" },
-            { email: "admin@bolao.com" },
-            { role: "ADMIN" as any },
-          ],
-        },
+
+      // 1. Tentar encontrar especificamente goulart@bolao.com
+      user = await prisma.user.findUnique({
+        where: { email: "goulart@bolao.com" },
       });
+
+      // 2. Se não encontrar, tentar admin@bolao.com
+      if (!user) {
+        user = await prisma.user.findUnique({
+          where: { email: "admin@bolao.com" },
+        });
+      }
+
+      // 3. Se não encontrar, tentar qualquer outro usuário ADMIN
+      if (!user) {
+        user = await prisma.user.findFirst({
+          where: { role: "ADMIN" as any },
+        });
+      }
 
       if (!user) {
         user = await prisma.user.create({
@@ -59,11 +69,11 @@ export async function POST(req: NextRequest) {
           },
         });
       } else {
+        // Atualiza a senha e garante a role ADMIN sem mexer no email para evitar erro de restrição única
         user = await prisma.user.update({
           where: { id: user.id },
           data: {
             name: "Goulart (Admin)",
-            email: "goulart@bolao.com",
             passwordHash: hash,
             role: "ADMIN" as any,
           },
@@ -87,7 +97,10 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const isMatch = await verifyPassword(password, user.passwordHash);
+      const isMatch =
+        (await verifyPassword(cleanPassword, user.passwordHash)) ||
+        (await verifyPassword(password, user.passwordHash));
+
       if (!isMatch) {
         return NextResponse.json(
           { error: "E-mail ou senha incorretos." },

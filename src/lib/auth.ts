@@ -71,7 +71,7 @@ export async function getCurrentUser(customToken?: string): Promise<SafeUser | n
       return null;
     }
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { id: payload.userId },
       select: {
         id: true,
@@ -85,6 +85,23 @@ export async function getCurrentUser(customToken?: string): Promise<SafeUser | n
         favoriteTeam: true,
       },
     });
+
+    if (!user && payload.email) {
+      user = await prisma.user.findUnique({
+        where: { email: payload.email },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          role: true,
+          pixKey: true,
+          pixKeyType: true,
+          avatar: true,
+          favoriteTeam: true,
+        },
+      });
+    }
 
     return user as SafeUser | null;
   } catch (error) {
