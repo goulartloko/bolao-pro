@@ -25,6 +25,17 @@ export async function GET() {
                 favoriteTeam: true,
               },
             },
+            predictions: {
+              select: {
+                id: true,
+                matchId: true,
+                homeScore: true,
+                awayScore: true,
+                pointsEarned: true,
+                scoreType: true,
+                isLocked: true,
+              },
+            },
           },
           orderBy: [
             { totalPoints: "desc" },
