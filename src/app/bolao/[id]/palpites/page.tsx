@@ -48,6 +48,7 @@ export default function PalpitesPage() {
   const [existingPredictions, setExistingPredictions] = useState<Record<string, any>>({});
   const [isPaid, setIsPaid] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -92,6 +93,9 @@ export default function PalpitesPage() {
           const predMap: Record<string, { home: number; away: number }> = {};
           const detailMap: Record<string, any> = {};
 
+          const hasSub = Boolean(predData.hasSubmitted || (Array.isArray(predData.predictions) && predData.predictions.length > 0));
+          setHasSubmitted(hasSub);
+
           if (Array.isArray(predData.predictions) && predData.predictions.length > 0) {
             predData.predictions.forEach((p: any) => {
               predMap[p.matchId] = { home: p.homeScore, away: p.awayScore };
@@ -100,9 +104,7 @@ export default function PalpitesPage() {
             setPredictions(predMap);
             setExistingPredictions(detailMap);
 
-            if (predData.isLocked || predData.predictions.some((p: any) => p.isLocked)) {
-              setIsLocked(true);
-            }
+            setIsLocked(Boolean(predData.isLocked));
           } else {
             // Se ainda não salvou no banco, restaura rascunho salvo se existir
             try {
@@ -143,7 +145,11 @@ export default function PalpitesPage() {
 
   // Atualiza placar de um jogo no formulário local e salva no rascunho
   function updateScore(matchId: string, side: "home" | "away", delta: number) {
-    if (isLocked) return;
+    const match = matches.find((m) => m.id === matchId);
+    if (match) {
+      const matchDeadline = new Date(match.matchDate).getTime() - 5 * 60 * 1000;
+      if (Date.now() >= matchDeadline || match.status !== "SCHEDULED") return;
+    }
     setPredictions((prev) => {
       const current = prev[matchId] || { home: 0, away: 0 };
       const nextVal = Math.max(0, current[side] + delta);
@@ -162,7 +168,11 @@ export default function PalpitesPage() {
   }
 
   function setDirectScore(matchId: string, side: "home" | "away", value: string) {
-    if (isLocked) return;
+    const match = matches.find((m) => m.id === matchId);
+    if (match) {
+      const matchDeadline = new Date(match.matchDate).getTime() - 5 * 60 * 1000;
+      if (Date.now() >= matchDeadline || match.status !== "SCHEDULED") return;
+    }
     const parsed = Math.max(0, parseInt(value || "0", 10));
     setPredictions((prev) => {
       const current = prev[matchId] || { home: 0, away: 0 };
@@ -180,18 +190,27 @@ export default function PalpitesPage() {
     });
   }
 
-  // Enviar palpites para o backend com travamento definitivo
+  // Enviar palpites para o backend com travamento por partida
   async function handleSave() {
-    if (isLocked) return;
-
     const localToken = typeof window !== "undefined" ? localStorage.getItem("bolao_admin_token") : null;
     if (!localToken || !currentUser) {
       setAuthOpen(true);
       return;
     }
 
+    const now = new Date();
+    const openCount = matches.filter((m: any) => {
+      const deadline = new Date(m.matchDate).getTime() - 5 * 60 * 1000;
+      return m.status === "SCHEDULED" && now.getTime() < deadline;
+    }).length;
+
+    if (openCount === 0) {
+      alert("Todas as partidas desta rodada já foram iniciadas ou encerradas.");
+      return;
+    }
+
     const confirmSave = confirm(
-      "Atenção: Ao confirmar seus palpites, eles serão TRAVADOS definitivamente para esta rodada e não poderão ser alterados. Deseja confirmar agora?"
+      "Deseja salvar seus palpites para os jogos abertos desta rodada? (Cada jogo fecha 5 minutos antes do início oficial)."
     );
 
     if (!confirmSave) return;
@@ -229,8 +248,8 @@ export default function PalpitesPage() {
         localStorage.removeItem(`bolao_draft_${tournamentId}`);
       } catch (e) {}
 
-      setIsLocked(true);
-      setSuccessMessage("✅ Palpites gravados com sucesso! Seus palpites estão travados para a apuração oficial.");
+      setHasSubmitted(true);
+      setSuccessMessage("✅ Palpites dos jogos futuros salvos com sucesso!");
 
       confetti({
         particleCount: 100,
@@ -304,19 +323,12 @@ export default function PalpitesPage() {
 
   const now = new Date();
 
-  // Cálculo rigoroso do prazo: 5 minutos antes do 1º jogo da rodada
-  const matchTimes = matches.map((m: any) => new Date(m.matchDate).getTime());
-  const earliestMatchTime = matchTimes.length > 0 ? Math.min(...matchTimes) : null;
-  const fiveMinBeforeFirst = earliestMatchTime ? earliestMatchTime - 5 * 60 * 1000 : null;
-
-  let effectiveDeadlineMs = tournament?.deadlinePredictions
-    ? new Date(tournament.deadlinePredictions).getTime()
-    : 0;
-  if (fiveMinBeforeFirst && (effectiveDeadlineMs === 0 || fiveMinBeforeFirst < effectiveDeadlineMs)) {
-    effectiveDeadlineMs = fiveMinBeforeFirst;
-  }
-
-  const isDeadlinePassed = effectiveDeadlineMs > 0 && now.getTime() >= effectiveDeadlineMs;
+  // Partidas que ainda estão abertas para palpites (mais de 5 min antes do início e status SCHEDULED)
+  const openMatches = matches.filter((m: any) => {
+    const deadline = new Date(m.matchDate).getTime() - 5 * 60 * 1000;
+    return m.status === "SCHEDULED" && now.getTime() < deadline;
+  });
+  const hasOpenMatches = openMatches.length > 0;
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -348,78 +360,76 @@ export default function PalpitesPage() {
           </div>
           <h1 className="text-2xl font-black text-white tracking-tight">Meus Palpites</h1>
           <p className="text-xs text-gray-400">
-            {isLocked
-              ? "Seus palpites estão confirmados e travados para a apuração oficial."
-              : isDeadlinePassed
-              ? "O prazo para envio de palpites encerrou 5 minutos antes do primeiro jogo."
-              : "Preencha seus palpites e clique em Salvar para travar suas escolhas."}
+            {hasOpenMatches
+              ? `Você ainda pode editar os palpites dos ${openMatches.length} jogos que não começaram (até 5 min antes de cada jogo).`
+              : "Todas as partidas desta rodada já foram iniciadas ou encerradas."}
           </p>
         </div>
 
-        {isLocked || isDeadlinePassed ? (
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/bolao/${tournamentId}/ranking`}
-              className="py-2.5 px-4 bg-gold-500 hover:bg-gold-400 text-arena-950 font-extrabold text-xs rounded-xl transition shadow-goldglow flex items-center gap-1.5"
-            >
-              <Trophy className="w-4 h-4" />
-              <span>Ver Classificação</span>
-            </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {hasOpenMatches && (
             <button
-              onClick={sharePredictions}
-              className="py-2.5 px-3 bg-[#25D366] hover:bg-[#20ba5a] text-arena-950 font-bold text-xs rounded-xl transition flex items-center gap-1"
-              title="Compartilhar no WhatsApp"
+              onClick={handleSave}
+              disabled={saving}
+              className="py-2.5 px-5 bg-pitch-green hover:bg-pitch-light text-arena-950 font-extrabold rounded-xl text-xs sm:text-sm transition shadow-glow flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <MessageCircle className="w-4 h-4 fill-arena-950" />
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>{hasSubmitted ? "Salvar Próximos Jogos" : "Confirmar Meus Palpites"}</span>
+                </>
+              )}
             </button>
-          </div>
-        ) : (
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="py-3 px-6 bg-pitch-green hover:bg-pitch-light text-arena-950 font-bold rounded-xl text-sm transition shadow-glow flex items-center justify-center gap-2 disabled:opacity-50"
+          )}
+
+          <Link
+            href={`/bolao/${tournamentId}/ranking`}
+            className="py-2.5 px-4 bg-gold-500 hover:bg-gold-400 text-arena-950 font-extrabold text-xs rounded-xl transition shadow-goldglow flex items-center gap-1.5"
           >
-            {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                <span>Confirmar e Travar Palpites</span>
-              </>
-            )}
+            <Trophy className="w-4 h-4" />
+            <span>Ver Classificação</span>
+          </Link>
+          <button
+            onClick={sharePredictions}
+            className="py-2.5 px-3 bg-[#25D366] hover:bg-[#20ba5a] text-arena-950 font-bold text-xs rounded-xl transition flex items-center gap-1"
+            title="Compartilhar no WhatsApp"
+          >
+            <MessageCircle className="w-4 h-4 fill-arena-950" />
           </button>
-        )}
+        </div>
       </div>
 
-      {/* BANNER DE PRAZO ENCERRADO (5 MIN ANTES DO 1º JOGO) */}
-      {isDeadlinePassed && !isLocked && (
-        <div className="mb-6 p-4 bg-arena-900 border-2 border-red-500/40 rounded-2xl text-xs sm:text-sm shadow-glow flex items-start gap-3">
-          <div className="p-2 rounded-xl bg-red-500/10 text-red-400 shrink-0 mt-0.5 border border-red-500/30">
-            <Lock className="w-5 h-5 text-red-400" />
+      {/* BANNER: JOGOS DO DIA SEGUINTE ABERTOS */}
+      {hasOpenMatches && hasSubmitted && (
+        <div className="mb-6 p-4 bg-arena-900 border-2 border-pitch-green/40 rounded-2xl text-xs sm:text-sm shadow-glow flex items-start gap-3">
+          <div className="p-2 rounded-xl bg-pitch-green/10 text-pitch-green shrink-0 mt-0.5 border border-pitch-green/30">
+            <CheckCircle2 className="w-5 h-5 text-pitch-green" />
           </div>
           <div>
             <h3 className="font-extrabold text-white text-sm sm:text-base flex items-center gap-1.5">
-              <span>Palpites Desta Rodada Encerrados</span>
+              <span>Palpites dos Próximos Jogos Liberados para Edição!</span>
             </h3>
             <p className="text-gray-300 text-xs mt-1 leading-relaxed">
-              Conforme as regras oficiais, o envio de palpites foi encerrado 5 minutos antes do início do primeiro jogo para garantir a transparência da apuração. Acompanhe a pontuação ao vivo no Ranking!
+              Os jogos já iniciados ou finalizados estão travados para apuração oficial. Os <strong>{openMatches.length} jogos futuros</strong> continuam abertos e você pode alterar seus palpites normalmente até 5 minutos antes de cada partida começar!
             </p>
           </div>
         </div>
       )}
 
-      {/* BANNER DE TRAVAMENTO DEFINITIVO */}
-      {isLocked && (
-        <div className="mb-6 p-4 bg-arena-900 border-2 border-pitch-green/40 rounded-2xl text-xs sm:text-sm shadow-glow flex items-start gap-3">
-          <div className="p-2 rounded-xl bg-pitch-green/10 text-pitch-green shrink-0 mt-0.5 border border-pitch-green/30">
-            <ShieldCheck className="w-5 h-5 text-pitch-green" />
+      {/* BANNER SE TODOS OS JOGOS DA RODADA ENCERRARAM */}
+      {!hasOpenMatches && (
+        <div className="mb-6 p-4 bg-arena-900 border-2 border-arena-700 rounded-2xl text-xs sm:text-sm shadow-glow flex items-start gap-3">
+          <div className="p-2 rounded-xl bg-arena-800 text-gray-400 shrink-0 mt-0.5 border border-arena-700">
+            <Lock className="w-5 h-5 text-gray-400" />
           </div>
           <div>
             <h3 className="font-extrabold text-white text-sm sm:text-base flex items-center gap-1.5">
-              <span>Palpites Confirmados e Travados!</span>
+              <span>Todos os Jogos Desta Rodada Já Estão Travados</span>
             </h3>
             <p className="text-gray-300 text-xs mt-1 leading-relaxed">
-              Seus palpites foram computados com sucesso e estão travados para apuração oficial. Eles não podem mais ser alterados. Acompanhe a atualização automática dos seus pontos no Ranking a cada apito final!
+              Todas as partidas da rodada já iniciaram ou foram finalizadas. Acompanhe a pontuação atualizada ao vivo na tabela de classificação!
             </p>
           </div>
         </div>
@@ -443,7 +453,7 @@ export default function PalpitesPage() {
       <div className="space-y-4">
         {matches.map((match) => {
           const matchDeadline = new Date(match.matchDate).getTime() - 5 * 60 * 1000;
-          const isMatchLocked = isLocked || isDeadlinePassed || now.getTime() >= matchDeadline || match.status !== "SCHEDULED";
+          const isMatchLocked = now.getTime() >= matchDeadline || match.status !== "SCHEDULED";
           const currentScore = predictions[match.id] || { home: 0, away: 0 };
           const detail = existingPredictions[match.id];
 
@@ -451,11 +461,9 @@ export default function PalpitesPage() {
             <div
               key={match.id}
               className={`bg-arena-900 border rounded-2xl p-4 transition ${
-                isLocked
-                  ? "border-pitch-green/30 bg-arena-900/90"
-                  : isMatchLocked
+                isMatchLocked
                   ? "border-arena-800 opacity-90"
-                  : "border-arena-750 hover:border-pitch-green/40"
+                  : "border-arena-750 hover:border-pitch-green/40 shadow-sm"
               }`}
             >
               {/* Topo do Card: Local, Data e Status */}
@@ -466,9 +474,13 @@ export default function PalpitesPage() {
                   <span className="font-medium text-gray-300">
                     {formatMatchDate(match.matchDate)}
                   </span>
-                  {isLocked && (
-                    <span className="ml-1 px-2 py-0.5 rounded-full bg-pitch-green/10 text-pitch-green text-[10px] font-bold border border-pitch-green/20">
-                      Palpite Travado
+                  {isMatchLocked ? (
+                    <span className="ml-1 px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 text-[10px] font-bold border border-red-500/20 flex items-center gap-1">
+                      <Lock className="w-2.5 h-2.5" /> Jogo Travado
+                    </span>
+                  ) : (
+                    <span className="ml-1 px-2 py-0.5 rounded-full bg-pitch-green/10 text-pitch-green text-[10px] font-bold border border-pitch-green/20 flex items-center gap-1">
+                      <Sparkles className="w-2.5 h-2.5" /> Aberto para Edição
                     </span>
                   )}
                 </div>
@@ -486,33 +498,30 @@ export default function PalpitesPage() {
                   </div>
 
                   {/* Controles de Placar Casa */}
-                  {isLocked ? (
-                    <div className="w-12 h-11 bg-pitch-green/10 border-2 border-pitch-green/40 rounded-xl flex items-center justify-center font-mono font-black text-xl text-pitch-green shadow-glow">
+                  {isMatchLocked ? (
+                    <div className="w-12 h-11 bg-arena-800/80 border border-arena-700 rounded-xl flex items-center justify-center font-mono font-black text-xl text-gray-200">
                       {currentScore.home}
                     </div>
                   ) : (
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        disabled={isMatchLocked}
                         onClick={() => updateScore(match.id, "home", -1)}
-                        className="w-8 h-8 rounded-lg bg-arena-800 hover:bg-arena-750 disabled:opacity-30 text-gray-300 flex items-center justify-center text-sm font-bold active:scale-95 transition"
+                        className="w-8 h-8 rounded-lg bg-arena-800 hover:bg-arena-750 text-gray-300 flex items-center justify-center text-sm font-bold active:scale-95 transition"
                       >
                         <Minus className="w-3.5 h-3.5" />
                       </button>
                       <input
                         type="number"
                         min="0"
-                        disabled={isMatchLocked}
                         value={currentScore.home}
                         onChange={(e) => setDirectScore(match.id, "home", e.target.value)}
-                        className="w-11 h-10 bg-arena-850 border border-arena-700 rounded-lg text-center font-mono font-bold text-lg text-white focus:outline-none focus:border-pitch-green disabled:opacity-60"
+                        className="w-11 h-10 bg-arena-850 border border-arena-700 rounded-lg text-center font-mono font-bold text-lg text-white focus:outline-none focus:border-pitch-green"
                       />
                       <button
                         type="button"
-                        disabled={isMatchLocked}
                         onClick={() => updateScore(match.id, "home", 1)}
-                        className="w-8 h-8 rounded-lg bg-arena-800 hover:bg-arena-750 disabled:opacity-30 text-gray-300 flex items-center justify-center text-sm font-bold active:scale-95 transition"
+                        className="w-8 h-8 rounded-lg bg-arena-800 hover:bg-arena-750 text-gray-300 flex items-center justify-center text-sm font-bold active:scale-95 transition"
                       >
                         <Plus className="w-3.5 h-3.5" />
                       </button>
@@ -540,33 +549,30 @@ export default function PalpitesPage() {
                   </div>
 
                   {/* Controles de Placar Fora */}
-                  {isLocked ? (
-                    <div className="w-12 h-11 bg-pitch-green/10 border-2 border-pitch-green/40 rounded-xl flex items-center justify-center font-mono font-black text-xl text-pitch-green shadow-glow">
+                  {isMatchLocked ? (
+                    <div className="w-12 h-11 bg-arena-800/80 border border-arena-700 rounded-xl flex items-center justify-center font-mono font-black text-xl text-gray-200">
                       {currentScore.away}
                     </div>
                   ) : (
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
-                        disabled={isMatchLocked}
                         onClick={() => updateScore(match.id, "away", -1)}
-                        className="w-8 h-8 rounded-lg bg-arena-800 hover:bg-arena-750 disabled:opacity-30 text-gray-300 flex items-center justify-center text-sm font-bold active:scale-95 transition"
+                        className="w-8 h-8 rounded-lg bg-arena-800 hover:bg-arena-750 text-gray-300 flex items-center justify-center text-sm font-bold active:scale-95 transition"
                       >
                         <Minus className="w-3.5 h-3.5" />
                       </button>
                       <input
                         type="number"
                         min="0"
-                        disabled={isMatchLocked}
                         value={currentScore.away}
                         onChange={(e) => setDirectScore(match.id, "away", e.target.value)}
-                        className="w-11 h-10 bg-arena-850 border border-arena-700 rounded-lg text-center font-mono font-bold text-lg text-white focus:outline-none focus:border-pitch-green disabled:opacity-60"
+                        className="w-11 h-10 bg-arena-850 border border-arena-700 rounded-lg text-center font-mono font-bold text-lg text-white focus:outline-none focus:border-pitch-green"
                       />
                       <button
                         type="button"
-                        disabled={isMatchLocked}
                         onClick={() => updateScore(match.id, "away", 1)}
-                        className="w-8 h-8 rounded-lg bg-arena-800 hover:bg-arena-750 disabled:opacity-30 text-gray-300 flex items-center justify-center text-sm font-bold active:scale-95 transition"
+                        className="w-8 h-8 rounded-lg bg-arena-800 hover:bg-arena-750 text-gray-300 flex items-center justify-center text-sm font-bold active:scale-95 transition"
                       >
                         <Plus className="w-3.5 h-3.5" />
                       </button>
@@ -603,16 +609,7 @@ export default function PalpitesPage() {
 
       {/* BOTÃO NO RODAPÉ */}
       <div className="sticky bottom-20 md:bottom-6 mt-6">
-        {isLocked ? (
-          <Link
-            href={`/bolao/${tournamentId}/ranking`}
-            className="w-full py-4 px-6 bg-gold-500 hover:bg-gold-400 text-arena-950 font-black text-base rounded-2xl transition shadow-goldglow flex items-center justify-center gap-2 active:scale-98"
-          >
-            <Trophy className="w-5 h-5 text-arena-950" />
-            <span>Acompanhar Minha Posição no Ranking</span>
-            <ArrowRight className="w-5 h-5 ml-1" />
-          </Link>
-        ) : (
+        {hasOpenMatches ? (
           <button
             onClick={handleSave}
             disabled={saving}
@@ -623,10 +620,19 @@ export default function PalpitesPage() {
             ) : (
               <>
                 <Save className="w-5 h-5" />
-                <span>Confirmar e Travar Meus Palpites</span>
+                <span>{hasSubmitted ? "Salvar Próximos Jogos" : "Confirmar e Travar Meus Palpites"}</span>
               </>
             )}
           </button>
+        ) : (
+          <Link
+            href={`/bolao/${tournamentId}/ranking`}
+            className="w-full py-4 px-6 bg-gold-500 hover:bg-gold-400 text-arena-950 font-black text-base rounded-2xl transition shadow-goldglow flex items-center justify-center gap-2 active:scale-98"
+          >
+            <Trophy className="w-5 h-5 text-arena-950" />
+            <span>Acompanhar Minha Posição no Ranking</span>
+            <ArrowRight className="w-5 h-5 ml-1" />
+          </Link>
         )}
       </div>
 

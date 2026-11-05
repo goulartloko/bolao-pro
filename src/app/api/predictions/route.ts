@@ -29,8 +29,21 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    const tournament = await prisma.tournament.findUnique({
+      where: { id: tournamentId },
+      include: { matches: true },
+    });
+
+    const now = new Date();
+    // Verifica se ainda existem partidas que NÃO começaram (mais de 5 min antes)
+    const hasOpenMatches = (tournament?.matches || []).some((m) => {
+      const matchDeadline = new Date(m.matchDate).getTime() - 5 * 60 * 1000;
+      return m.status === "SCHEDULED" && now.getTime() < matchDeadline;
+    });
+
     const hasSubmitted = (participant?.predictions || []).length > 0;
-    const isLocked = hasSubmitted && (participant?.predictions || []).some((p) => p.isLocked);
+    // Só trava tudo se não houver mais nenhum jogo aberto na rodada
+    const isLocked = !hasOpenMatches && hasSubmitted;
 
     return NextResponse.json({
       participant,
@@ -38,6 +51,7 @@ export async function GET(req: NextRequest) {
       isPaid: participant?.paymentStatus === "PAID",
       hasSubmitted,
       isLocked,
+      hasOpenMatches,
     });
   } catch (error: any) {
     console.error("Erro ao buscar palpites:", error);
@@ -62,7 +76,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Busca o torneio e as partidas para verificar os horários de bloqueio
+    // 1. Busca o torneio e as partidas
     const tournament = await prisma.tournament.findUnique({
       where: { id: tournamentId },
       include: { matches: true },
@@ -74,27 +88,7 @@ export async function POST(req: NextRequest) {
 
     const now = new Date();
 
-    // 2. Cálculo do prazo rigoroso: 5 minutos antes do primeiro jogo
-    const matchTimes = tournament.matches.map((m) => new Date(m.matchDate).getTime());
-    const earliestMatchTime = matchTimes.length > 0 ? Math.min(...matchTimes) : null;
-    const fiveMinBeforeFirst = earliestMatchTime ? earliestMatchTime - 5 * 60 * 1000 : null;
-
-    let effectiveDeadlineMs = new Date(tournament.deadlinePredictions).getTime();
-    if (fiveMinBeforeFirst && fiveMinBeforeFirst < effectiveDeadlineMs) {
-      effectiveDeadlineMs = fiveMinBeforeFirst;
-    }
-
-    if (now.getTime() >= effectiveDeadlineMs) {
-      return NextResponse.json(
-        {
-          error:
-            "Prazo encerrado: os palpites são bloqueados exatamente 5 minutos antes do início do primeiro jogo da rodada para garantir a apuração oficial.",
-        },
-        { status: 403 }
-      );
-    }
-
-    // 3. Valida ou inscreve o participante (se gratuito, aprova automaticamente)
+    // 2. Valida ou inscreve o participante (se gratuito, aprova automaticamente)
     let participant = await prisma.participant.findUnique({
       where: {
         userId_tournamentId: {
@@ -130,23 +124,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verifica se os palpites já foram travados anteriormente
-    const alreadyLocked = await prisma.prediction.findFirst({
-      where: {
-        participantId: participant.id,
-        isLocked: true,
-      },
-    });
-
-    if (alreadyLocked) {
-      return NextResponse.json(
-        { error: "Seus palpites para esta rodada já foram enviados e estão travados para apuração oficial." },
-        { status: 403 }
-      );
-    }
-
+    // 3. Salva / Atualiza partida a partida com bloqueio individual de horário
+    // Jogos iniciados (ou a 5 min de começar) ou finalizados NUNCA são alterados!
+    // Jogos futuros continuam abertos para edição!
     const matchMap = new Map(tournament.matches.map((m) => [m.id, m]));
     const results = [];
+    let lockedCount = 0;
 
     for (const item of predictions) {
       const match = matchMap.get(item.matchId);
@@ -154,8 +137,11 @@ export async function POST(req: NextRequest) {
 
       // Bloqueio rigoroso por partida: 5 minutos antes do início do jogo
       const matchDeadlineMs = new Date(match.matchDate).getTime() - 5 * 60 * 1000;
-      if (now.getTime() >= matchDeadlineMs || match.status !== "SCHEDULED") {
-        continue;
+      const isMatchBlocked = now.getTime() >= matchDeadlineMs || match.status !== "SCHEDULED";
+
+      if (isMatchBlocked) {
+        lockedCount += 1;
+        continue; // Não altera partidas já travadas ou em andamento
       }
 
       const homeScore = Math.max(0, parseInt(item.homeScore ?? 0, 10));
@@ -188,9 +174,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Palpites salvos e confirmados com sucesso! Seus palpites estão travados para apuração.",
-      count: results.length,
-      isLocked: true,
+      message: results.length > 0
+        ? "Palpites salvos com sucesso! Os jogos futuros foram atualizados."
+        : "Nenhum jogo aberto para edição no momento.",
+      updatedCount: results.length,
+      lockedSkipped: lockedCount,
     });
   } catch (error: any) {
     console.error("Erro ao salvar palpites:", error);
